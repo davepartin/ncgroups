@@ -1,0 +1,63 @@
+// Neighborhood Church Group Manager - Database Schema
+// PostgreSQL database with Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Person {
+  id          String   @id @default(uuid())
+  firstName   String   @map("first_name")
+  lastName    String   @map("last_name")
+  phone       String?  // 10-digit US phone number, stored clean (e.g., "9139017581")
+  email       String?
+  gender      Gender?
+  ageGroup    AgeGroup? @map("age_group")
+  isOptedOut  Boolean  @default(false) @map("is_opted_out")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Many-to-many relationship with groups
+  groups      PersonGroup[]
+  
+  @@map("people")
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Many-to-many relationship with people
+  members     PersonGroup[]
+  
+  @@map("groups")
+}
+
+model PersonGroup {
+  personId    String   @map("person_id")
+  groupId     String   @map("group_id")
+  
+  person      Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  @@id([personId, groupId])
+  @@map("person_groups")
+}
+
+enum Gender {
+  Guy
+  Lady
+}
+
+enum AgeGroup {
+  Adult
+  Youth
+  Child
+}
