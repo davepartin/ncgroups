@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Neighborhood Church Group Manager - Staff tool for managing contacts and group communication",
   "type": "module",
+  "main": "server/index.js",
   "scripts": {
     "dev": "node --watch server/index.js",
     "start": "node server/index.js",
@@ -23,5 +24,8 @@
   },
   "devDependencies": {
     "prisma": "^5.10.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
