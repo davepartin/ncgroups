@@ -162,8 +162,8 @@ export default function Dashboard() {
 
       const { phones } = await getFilteredPhones(filters)
 
-      // Copy to clipboard
-      await navigator.clipboard.writeText(phones.join(', '))
+      // Copy to clipboard (newlines for better iMessage support)
+      await navigator.clipboard.writeText(phones.join('\n'))
 
       // Show feedback
       setCopied(true)
@@ -250,8 +250,8 @@ export default function Dashboard() {
               onClick={handleCopyNumbers}
               disabled={actionDisabled || copyLoading}
               className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm ${copied
-                  ? 'bg-green-600 text-white'
-                  : 'bg-nc-mustard text-white hover:opacity-90'
+                ? 'bg-green-600 text-white'
+                : 'bg-nc-mustard text-white hover:opacity-90'
                 } ${actionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {copied ? (
