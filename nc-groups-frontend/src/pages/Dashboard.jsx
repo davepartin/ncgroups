@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [selectedGroups, setSelectedGroups] = useState([]) // Array of group IDs
   const [selectedAgeGroup, setSelectedAgeGroup] = useState(null) // Adult, Youth, Child
   const [selectedGender, setSelectedGender] = useState(null) // Male, Female
+  const [selectedMembershipStatus, setSelectedMembershipStatus] = useState(null) // Member, RegularAttender, Youth, Other
 
   // Sort: 'firstName' | 'lastName'
   const [sortBy, setSortBy] = useState('lastName')
@@ -112,9 +113,14 @@ export default function Dashboard() {
         return false
       }
 
+      // Membership status filter
+      if (selectedMembershipStatus && person.membershipStatus !== selectedMembershipStatus) {
+        return false
+      }
+
       return true
     })
-  }, [people, search, selectedGroups, selectedAgeGroup, selectedGender])
+  }, [people, search, selectedGroups, selectedAgeGroup, selectedGender, selectedMembershipStatus])
 
   // Sorted list for display
   const sortedPeople = useMemo(() => {
@@ -163,6 +169,7 @@ export default function Dashboard() {
     setSelectedGroups([])
     setSelectedAgeGroup(null)
     setSelectedGender(null)
+    setSelectedMembershipStatus(null)
     setSearch('')
   }
 
@@ -188,7 +195,7 @@ export default function Dashboard() {
     }
   }
 
-  const hasActiveFilters = selectedGroups.length > 0 || selectedAgeGroup || selectedGender || search
+  const hasActiveFilters = selectedGroups.length > 0 || selectedAgeGroup || selectedGender || selectedMembershipStatus || search
   const actionDisabled = textablePeople.length === 0
 
   return (
@@ -316,6 +323,8 @@ export default function Dashboard() {
         setSelectedAgeGroup={setSelectedAgeGroup}
         selectedGender={selectedGender}
         setSelectedGender={setSelectedGender}
+        selectedMembershipStatus={selectedMembershipStatus}
+        setSelectedMembershipStatus={setSelectedMembershipStatus}
         clearFilters={clearFilters}
         hasActiveFilters={hasActiveFilters}
       />

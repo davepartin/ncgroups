@@ -8,6 +8,8 @@ export default function FilterBar({
   setSelectedAgeGroup,
   selectedGender,
   setSelectedGender,
+  selectedMembershipStatus,
+  setSelectedMembershipStatus,
   clearFilters,
   hasActiveFilters
 }) {
@@ -83,7 +85,44 @@ export default function FilterBar({
           </div>
         )}
 
-        {/* Row 3: Ministry Group Filter */}
+        {/* Row 3: Membership Status Filter (conditional) */}
+        {showGenderFilter && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Status:</span>
+            <button
+              onClick={() => setSelectedMembershipStatus(null)}
+              className={`filter-pill shrink-0 ${selectedMembershipStatus === null ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setSelectedMembershipStatus('Member')}
+              className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Member' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            >
+              Members
+            </button>
+            <button
+              onClick={() => setSelectedMembershipStatus('RegularAttender')}
+              className={`filter-pill shrink-0 ${selectedMembershipStatus === 'RegularAttender' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            >
+              Regular Attenders
+            </button>
+            <button
+              onClick={() => setSelectedMembershipStatus('Youth')}
+              className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Youth' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            >
+              Youth
+            </button>
+            <button
+              onClick={() => setSelectedMembershipStatus('Other')}
+              className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Other' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            >
+              Other
+            </button>
+          </div>
+        )}
+
+        {/* Row 4: Ministry Group Filter */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Group:</span>
 
