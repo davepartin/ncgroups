@@ -121,8 +121,11 @@ export const getSmsUri = async (filters) => {
 
   const phones = filtered.map(p => p.phone).filter(Boolean)
 
-  // iOS uses commas, Android uses semicolons - try comma first
-  const smsUri = `sms:${phones.join(',')}`
+  // iOS uses '&' for multiple recipients, others usually use ','
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  const separator = isIOS ? '&' : ','
+  
+  const smsUri = `sms:${phones.join(separator)}`
 
   return { smsUri, count: phones.length }
 }
