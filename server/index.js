@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.js';
 import peopleRoutes from './routes/people.js';
 import groupsRoutes from './routes/groups.js';
 import textBlastRoutes from './routes/text-blast.js';
+import twilioWebhookRoutes from './routes/twilio-webhook.js';
 import { authenticateToken } from './middleware/auth.js';
 
 // Load environment variables
@@ -31,6 +32,7 @@ app.get('/health', (req, res) => {
 
 // Public routes
 app.use('/api/auth', authRoutes);
+app.use('/api/twilio', twilioWebhookRoutes); // Twilio webhook (no auth - Twilio calls this)
 
 // Protected routes (require authentication)
 app.use('/api/people', authenticateToken, peopleRoutes);

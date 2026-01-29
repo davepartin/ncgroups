@@ -1,17 +1,26 @@
 /**
  * Text Blast Routes
- * Send SMS messages via n8n Twilio webhook
- * 
+ * Send SMS messages directly via Twilio
+ *
  * POST /api/text-blast/send    - Send text blast
  * POST /api/text-blast/preview - Preview recipients without sending
  */
 
 import { Router } from 'express';
+import twilio from 'twilio';
 import prisma from '../db.js';
 
 const router = Router();
 
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8n-on-fly-withered-hill-6831.fly.dev/webhook/4ad4d398-9dfe-400f-8599-9226084afb79';
+// Initialize Twilio client
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
+
+// Opt-out footer added to every message
+const OPT_OUT_FOOTER = '\n\nReply STOP to opt out';
 
 /**
  * Helper: Get eligible recipients based on filters
@@ -54,9 +63,23 @@ async function getEligibleRecipients({ groupId, gender, ageGroup }) {
 }
 
 /**
+ * Helper: Send SMS to a single recipient
+ */
+async function sendSingleSMS(to, message) {
+  // Format phone number with +1 if needed
+  const formattedPhone = to.startsWith('+') ? to : `+1${to}`;
+
+  return twilioClient.messages.create({
+    body: message,
+    from: TWILIO_PHONE_NUMBER,
+    to: formattedPhone
+  });
+}
+
+/**
  * POST /api/text-blast/preview
  * Body: { groupId?, gender?, ageGroup? }
- * 
+ *
  * Returns list of people who would receive the text
  */
 router.post('/preview', async (req, res) => {
@@ -88,20 +111,29 @@ router.post('/preview', async (req, res) => {
 /**
  * POST /api/text-blast/send
  * Body: { message, groupId?, gender?, ageGroup? }
- * 
- * Sends text blast via n8n webhook
+ *
+ * Sends text blast directly via Twilio (one SMS per recipient)
  */
 router.post('/send', async (req, res) => {
   try {
     const { message, groupId, gender, ageGroup } = req.body;
+
+    // Validate Twilio configuration
+    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+      console.error('Twilio credentials not configured');
+      return res.status(500).json({ error: 'SMS service not configured' });
+    }
 
     // Validate message
     if (!message || message.trim().length === 0) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    if (message.length > 1600) {
-      return res.status(400).json({ error: 'Message too long (max 1600 characters)' });
+    // Full message with opt-out footer
+    const fullMessage = message.trim() + OPT_OUT_FOOTER;
+
+    if (fullMessage.length > 1600) {
+      return res.status(400).json({ error: 'Message too long (max 1600 characters including opt-out text)' });
     }
 
     // Get recipients
@@ -111,39 +143,40 @@ router.post('/send', async (req, res) => {
       return res.status(400).json({ error: 'No eligible recipients found' });
     }
 
-    // Format phone numbers as comma-separated string (without +1 prefix - n8n adds it)
-    const numbers = recipients.map(r => r.phone).join(',');
+    // Send SMS to each recipient individually
+    const results = {
+      sent: [],
+      failed: []
+    };
 
-    // Send to n8n webhook
-    const response = await fetch(N8N_WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        message: message.trim(),
-        numbers
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('n8n webhook error:', errorText);
-      return res.status(500).json({ error: 'Failed to send text blast' });
+    for (const recipient of recipients) {
+      try {
+        await sendSingleSMS(recipient.phone, fullMessage);
+        results.sent.push({
+          name: `${recipient.firstName} ${recipient.lastName}`,
+          phone: recipient.phone
+        });
+      } catch (error) {
+        console.error(`Failed to send to ${recipient.phone}:`, error.message);
+        results.failed.push({
+          name: `${recipient.firstName} ${recipient.lastName}`,
+          phone: recipient.phone,
+          error: error.message
+        });
+      }
     }
 
     // Calculate cost
-    const cost = (recipients.length * 0.01).toFixed(2);
+    const cost = (results.sent.length * 0.01).toFixed(2);
 
     res.json({
       success: true,
-      message: 'Text blast sent successfully',
-      recipientCount: recipients.length,
+      message: `Text blast sent to ${results.sent.length} recipients`,
+      recipientCount: results.sent.length,
+      failedCount: results.failed.length,
       cost: `$${cost}`,
-      recipients: recipients.map(r => ({
-        name: `${r.firstName} ${r.lastName}`,
-        phone: r.phone
-      }))
+      sent: results.sent,
+      failed: results.failed.length > 0 ? results.failed : undefined
     });
   } catch (error) {
     console.error('Error sending text blast:', error);
@@ -154,7 +187,7 @@ router.post('/send', async (req, res) => {
 /**
  * GET /api/text-blast/sms-uri
  * Query: { groupId?, gender?, ageGroup? }
- * 
+ *
  * Returns an SMS URI for native group texting (opens phone's SMS app)
  */
 router.get('/sms-uri', async (req, res) => {
@@ -168,21 +201,15 @@ router.get('/sms-uri', async (req, res) => {
     }
 
     // Format phone numbers for SMS URI
-    // iOS: sms:/open?addresses=1234567890,0987654321
-    // Android: sms:1234567890,0987654321
-    // We'll return both formats and let the frontend decide
     const phones = recipients.map(r => r.phone);
-    
+
     res.json({
       recipientCount: recipients.length,
       phones,
-      // Standard SMS URI (works on most devices)
       smsUri: `sms:${phones.join(',')}`,
-      // iOS-specific format
       smsUriIOS: `sms:/open?addresses=${phones.join(',')}`,
-      // Android-specific format  
       smsUriAndroid: `sms:${phones.join(',')}`,
-      warning: recipients.length > 20 
+      warning: recipients.length > 20
         ? 'Large group texts may not work on all devices. Consider using Text Blast instead.'
         : null
     });
