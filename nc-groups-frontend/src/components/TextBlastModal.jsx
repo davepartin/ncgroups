@@ -28,7 +28,7 @@ export default function TextBlastModal({ filters, filterDescription, recipientCo
         },
         body: JSON.stringify({
           message: message.trim(),
-          groupId: filters.groupId,
+          groupId: filters.groupIds?.[0], // Use first selected group
           gender: filters.gender,
           ageGroup: filters.ageGroup
         })
@@ -72,11 +72,10 @@ export default function TextBlastModal({ filters, filterDescription, recipientCo
         ) : (
           <>
             <textarea
-              className={`w-full h-32 p-3 border-2 rounded-lg mb-2 focus:outline-none transition-colors ${
-                isOverLimit
+              className={`w-full h-32 p-3 border-2 rounded-lg mb-2 focus:outline-none transition-colors ${isOverLimit
                   ? 'border-nc-rose focus:border-nc-rose'
                   : 'border-gray-200 focus:border-nc-green'
-              }`}
+                }`}
               placeholder="Type your message here..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
