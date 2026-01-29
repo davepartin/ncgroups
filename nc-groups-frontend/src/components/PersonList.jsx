@@ -16,8 +16,9 @@ export default function PersonList({ people, onPersonClick }) {
           className="p-4 bg-white hover:bg-gray-50 flex items-center justify-between cursor-pointer active:bg-gray-100 transition-colors"
         >
           <div>
-            <h3 className="font-semibold text-nc-green">
+            <h3 className={`font-semibold ${person.isOptedOut ? 'text-nc-rose' : 'text-nc-green'}`}>
               {person.firstName} {person.lastName}
+              {person.isOptedOut && <span className="ml-2 text-xs font-normal">(opted out)</span>}
             </h3>
             <div className="text-sm text-gray-500 flex flex-wrap gap-x-2">
               {person.ageGroup && <span>{person.ageGroup}</span>}

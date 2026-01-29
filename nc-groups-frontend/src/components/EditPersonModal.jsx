@@ -12,6 +12,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
   const [selectedGroups, setSelectedGroups] = useState(
     person.groups?.map(g => g.id) || []
   )
+  const [isOptedOut, setIsOptedOut] = useState(person.isOptedOut || false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -40,6 +41,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
           email: email.trim() || null,
           ageGroup: ageGroup || null,
           gender: gender || null,
+          isOptedOut: isOptedOut,
           groupIds: selectedGroups
         })
       })
@@ -161,6 +163,35 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
                 <option value="Lady">Lady</option>
               </select>
             </div>
+          </div>
+
+          {/* Opt-Out Toggle */}
+          <div
+            className={`p-3 rounded-lg border-2 ${isOptedOut ? 'border-nc-rose bg-nc-rose/5' : 'border-gray-200'}`}
+          >
+            <label className="flex items-center justify-between cursor-pointer">
+              <div>
+                <span className={`font-medium ${isOptedOut ? 'text-nc-rose' : 'text-gray-700'}`}>
+                  Opted Out of Texts
+                </span>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {isOptedOut ? 'Will not receive text blasts' : 'Will receive text blasts'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOptedOut(!isOptedOut)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  isOptedOut ? 'bg-nc-rose' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isOptedOut ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </label>
           </div>
 
           {/* Groups */}
