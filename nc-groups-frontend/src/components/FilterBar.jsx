@@ -146,7 +146,7 @@ export default function FilterBar({
 
         {/* Group Dropdown */}
         {showGroups && (
-          <div className="bg-nc-light rounded-xl p-4 space-y-4 border border-gray-200">
+          <div className="bg-nc-light rounded-xl p-4 space-y-4 border border-gray-200 max-h-[60vh] overflow-y-auto">
             {/* Header / Done Button */}
             <div className="flex justify-between items-center pb-2 border-b border-gray-200">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Select Groups (Multiple)</span>
