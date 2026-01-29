@@ -1,0 +1,11 @@
+{
+    "buildCommand": "cd nc-groups-frontend && npm install && npm run build",
+    "outputDirectory": "nc-groups-frontend/dist",
+    "framework": "vite",
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}
