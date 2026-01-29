@@ -201,16 +201,13 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-nc-light flex flex-col">
       {/* Header */}
-      <header className="bg-nc-green text-white px-4 py-3 shadow-lg sticky top-0 z-40">
+      <header className="bg-nc-green text-white px-4 py-2 shadow-lg sticky top-0 z-40">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <span className="font-display font-bold text-lg">nc</span>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+              <span className="font-display font-bold text-base">nc</span>
             </div>
-            <div>
-              <h1 className="font-display font-bold text-lg leading-tight">NC Groups</h1>
-              <p className="text-white/70 text-xs">Neighborhood Church</p>
-            </div>
+            <h1 className="font-display font-bold text-base">NC Groups</h1>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -247,7 +244,7 @@ export default function Dashboard() {
       </header>
 
       {/* Search & Actions Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-[68px] z-30">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-[52px] z-30">
         <div className="max-w-4xl mx-auto flex gap-3">
           {/* Search Input (40%) */}
           <div className="relative w-[40%]">
