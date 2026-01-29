@@ -21,6 +21,9 @@ const router = Router();
  *   - group: Filter by group ID
  *   - gender: Filter by gender (Male, Female)
  *   - ageGroup: Filter by age group (Adult, Youth, Child)
+ *   - gender: Filter by gender (Male, Female)
+ *   - ageGroup: Filter by age group (Adult, Youth, Child)
+ *   - membershipStatus: Filter by membership status
  *   - hasPhone: Filter to only people with phone numbers (true/false)
  *   - optedOut: Include opted-out people (true/false, default false)
  *   - sort: Sort field (lastName, firstName, createdAt)
@@ -28,15 +31,18 @@ const router = Router();
  */
 router.get('/', async (req, res) => {
   try {
-    const { 
-      search, 
-      group, 
-      gender, 
-      ageGroup, 
+    const {
+      search,
+      group,
+      gender,
+      group,
+      gender,
+      ageGroup,
+      membershipStatus,
       hasPhone,
       optedOut = 'false',
-      sort = 'lastName', 
-      order = 'asc' 
+      sort = 'lastName',
+      order = 'asc'
     } = req.query;
 
     // Build where clause
@@ -67,6 +73,11 @@ router.get('/', async (req, res) => {
     // Filter by age group
     if (ageGroup) {
       where.ageGroup = ageGroup;
+    }
+
+    // Filter by membership status
+    if (membershipStatus) {
+      where.membershipStatus = membershipStatus;
     }
 
     // Filter by has phone
@@ -156,7 +167,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, phone, email, gender, ageGroup, groupIds = [] } = req.body;
+    const { firstName, lastName, phone, email, gender, ageGroup, membershipStatus, groupIds = [] } = req.body;
 
     if (!firstName || !lastName) {
       return res.status(400).json({ error: 'First name and last name are required' });
@@ -173,7 +184,10 @@ router.post('/', async (req, res) => {
         phone: validPhone,
         email: email || null,
         gender: gender || null,
+        email: email || null,
+        gender: gender || null,
         ageGroup: ageGroup || null,
+        membershipStatus: membershipStatus || null,
         groups: {
           create: groupIds.map(groupId => ({
             group: { connect: { id: groupId } }
@@ -206,7 +220,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, phone, email, gender, ageGroup, isOptedOut, groupIds } = req.body;
+    const { firstName, lastName, phone, email, gender, ageGroup, membershipStatus, isOptedOut, groupIds } = req.body;
 
     // Check if person exists
     const existing = await prisma.person.findUnique({ where: { id } });
@@ -221,6 +235,7 @@ router.put('/:id', async (req, res) => {
     if (email !== undefined) updateData.email = email || null;
     if (gender !== undefined) updateData.gender = gender || null;
     if (ageGroup !== undefined) updateData.ageGroup = ageGroup || null;
+    if (membershipStatus !== undefined) updateData.membershipStatus = membershipStatus || null;
     if (isOptedOut !== undefined) updateData.isOptedOut = isOptedOut;
 
     // Handle phone cleaning
