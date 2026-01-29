@@ -29,7 +29,6 @@ export default function Dashboard() {
   // Modal state
   const [showTextBlast, setShowTextBlast] = useState(false)
   const [showAddPerson, setShowAddPerson] = useState(false)
-  const [showAddPerson, setShowAddPerson] = useState(false)
   const [showAddGroup, setShowAddGroup] = useState(false)
   const [showManageGroups, setShowManageGroups] = useState(false)
   const [editingPerson, setEditingPerson] = useState(null)
