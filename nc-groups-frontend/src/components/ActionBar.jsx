@@ -1,22 +1,27 @@
 import { useState } from 'react'
-import { getSmsUri } from '../api/client'
+import { getFilteredPhones } from '../api/client'
 
 export default function ActionBar({ count, filters, onTextBlast }) {
-  const [loadingSms, setLoadingSms] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
 
-  const handleGroupText = async () => {
+  const handleCopyNumbers = async () => {
     if (count === 0) return
-    
-    setLoadingSms(true)
+
+    setLoading(true)
     try {
-      const result = await getSmsUri(filters)
-      
-      // Open native SMS app
-      window.location.href = result.smsUri
+      const { phones } = await getFilteredPhones(filters)
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(phones.join(', '))
+
+      // Show feedback
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      alert('Failed to generate SMS: ' + err.message)
+      alert('Failed to copy numbers: ' + err.message)
     } finally {
-      setLoadingSms(false)
+      setLoading(false)
     }
   }
 
@@ -26,16 +31,27 @@ export default function ActionBar({ count, filters, onTextBlast }) {
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-30">
       <div className="max-w-4xl mx-auto px-4 py-3">
         <div className="flex gap-3">
-          {/* Group Text Button (Native SMS) */}
+          {/* Copy Numbers Button */}
           <button
-            onClick={handleGroupText}
-            disabled={disabled || loadingSms}
-            className="action-btn flex-1 bg-nc-blue text-white"
+            onClick={handleCopyNumbers}
+            disabled={disabled || loading}
+            className={`action-btn flex-1 text-white transition-colors duration-200 ${copied ? 'bg-green-600' : 'bg-nc-blue'}`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <span>Group Text ({count})</span>
+            {copied ? (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                <span>Copy Numbers ({count})</span>
+              </>
+            )}
           </button>
 
           {/* Text Blast Button (Twilio) */}

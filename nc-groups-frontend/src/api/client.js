@@ -103,9 +103,9 @@ export const sendTextBlast = async (message, filters) => {
   })
 }
 
-// Generate SMS URI for native group texting
-export const getSmsUri = async (filters) => {
-  // Get filtered people and build SMS URI
+// Get filtered phone numbers for copy-paste
+export const getFilteredPhones = async (filters) => {
+  // Get filtered people
   const { people } = await getPeople()
 
   const filtered = people.filter(person => {
@@ -119,13 +119,8 @@ export const getSmsUri = async (filters) => {
     return true
   })
 
+  // Return clean list of phones
   const phones = filtered.map(p => p.phone).filter(Boolean)
 
-  // iOS uses '&' for multiple recipients, others usually use ','
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  const separator = isIOS ? '&' : ','
-  
-  const smsUri = `sms:${phones.join(separator)}`
-
-  return { smsUri, count: phones.length }
+  return { phones, count: phones.length }
 }
