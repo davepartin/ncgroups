@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply text-nc-ink antialiased bg-nc-light;
+  }
+}
+
+@layer components {
+  .filter-pill {
+    @apply px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border shadow-sm active:scale-95;
+  }
+
+  .filter-pill-inactive {
+    @apply bg-white border-gray-200 text-gray-600 hover:border-nc-green hover:text-nc-green hover:shadow-md;
+  }
+
+  .filter-pill-active {
+    @apply bg-nc-green border-nc-green text-white shadow-md hover:bg-opacity-90;
+  }
+
+  .action-btn {
+    @apply flex items-center justify-center gap-2 py-3 px-4 font-semibold transition-transform active:scale-95 text-sm uppercase tracking-wide;
+  }
+}
