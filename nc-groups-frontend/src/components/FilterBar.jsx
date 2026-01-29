@@ -95,44 +95,69 @@ export default function FilterBar({
             All Groups
           </button>
 
-          onClick={() => setShowGroups(!showGroups)}
-          className={`filter-pill shrink-0 flex items-center gap-1 ${selectedGroups.length > 0 ? 'filter-pill-active' : 'filter-pill-inactive'
-            }`}
+          <button
+            onClick={() => setShowGroups(!showGroups)}
+            className={`filter-pill shrink-0 flex items-center gap-1 ${selectedGroups.length > 0 ? 'filter-pill-active' : 'filter-pill-inactive'
+              }`}
           >
-          {selectedGroups.length > 0
-            ? `${selectedGroups.length} Groups Selected`
-            : 'Select Group'
-          }
-          <svg
-            className={`w-4 h-4 transition-transform ${showGroups ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Group Dropdown */}
-      {showGroups && (
-        <div className="bg-nc-light rounded-xl p-4 space-y-4 border border-gray-200">
-          {/* Header / Done Button */}
-          <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Select Groups (Multiple)</span>
-            <button
-              onClick={() => setShowGroups(false)}
-              className="bg-nc-green text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm hover:bg-nc-green-dark transition-colors"
+            {selectedGroups.length > 0
+              ? `${selectedGroups.length} Groups Selected`
+              : 'Select Group'
+            }
+            <svg
+              className={`w-4 h-4 transition-transform ${showGroups ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              Done
-            </button>
-          </div>
-          {/* Special Groups */}
-          {specialGroups.length > 0 && (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Group Dropdown */}
+        {showGroups && (
+          <div className="bg-nc-light rounded-xl p-4 space-y-4 border border-gray-200">
+            {/* Header / Done Button */}
+            <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Select Groups (Multiple)</span>
+              <button
+                onClick={() => setShowGroups(false)}
+                className="bg-nc-green text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm hover:bg-nc-green-dark transition-colors"
+              >
+                Done
+              </button>
+            </div>
+            {/* Special Groups */}
+            {specialGroups.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Special Groups</h4>
+                <div className="flex flex-wrap gap-2">
+                  {specialGroups.map(group => (
+                    <button
+                      key={group.id}
+                      onClick={() => {
+                        if (selectedGroups.includes(group.id)) {
+                          setSelectedGroups(selectedGroups.filter(id => id !== group.id))
+                        } else {
+                          setSelectedGroups([...selectedGroups, group.id])
+                        }
+                      }}
+                      className={`filter-pill text-xs ${selectedGroups.includes(group.id) ? 'filter-pill-active' : 'filter-pill-inactive'
+                        }`}
+                    >
+                      {group.name} <span className="opacity-70">({group.memberCount})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ministry Teams */}
             <div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Special Groups</h4>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ministry Teams</h4>
               <div className="flex flex-wrap gap-2">
-                {specialGroups.map(group => (
+                {ministryGroups.map(group => (
                   <button
                     key={group.id}
                     onClick={() => {
@@ -150,56 +175,32 @@ export default function FilterBar({
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Ministry Teams */}
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ministry Teams</h4>
-            <div className="flex flex-wrap gap-2">
-              {ministryGroups.map(group => (
-                <button
-                  key={group.id}
-                  onClick={() => {
-                    if (selectedGroups.includes(group.id)) {
-                      setSelectedGroups(selectedGroups.filter(id => id !== group.id))
-                    } else {
-                      setSelectedGroups([...selectedGroups, group.id])
-                    }
-                  }}
-                  className={`filter-pill text-xs ${selectedGroups.includes(group.id) ? 'filter-pill-active' : 'filter-pill-inactive'
-                    }`}
-                >
-                  {group.name} <span className="opacity-70">({group.memberCount})</span>
-                </button>
-              ))}
+            {/* D-Groups */}
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">D-Groups & Small Groups</h4>
+              <div className="flex flex-wrap gap-2">
+                {dGroups.map(group => (
+                  <button
+                    key={group.id}
+                    onClick={() => {
+                      if (selectedGroups.includes(group.id)) {
+                        setSelectedGroups(selectedGroups.filter(id => id !== group.id))
+                      } else {
+                        setSelectedGroups([...selectedGroups, group.id])
+                      }
+                    }}
+                    className={`filter-pill text-xs ${selectedGroups.includes(group.id) ? 'filter-pill-active' : 'filter-pill-inactive'
+                      }`}
+                  >
+                    {group.name} <span className="opacity-70">({group.memberCount})</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-
-          {/* D-Groups */}
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">D-Groups & Small Groups</h4>
-            <div className="flex flex-wrap gap-2">
-              {dGroups.map(group => (
-                <button
-                  key={group.id}
-                  onClick={() => {
-                    if (selectedGroups.includes(group.id)) {
-                      setSelectedGroups(selectedGroups.filter(id => id !== group.id))
-                    } else {
-                      setSelectedGroups([...selectedGroups, group.id])
-                    }
-                  }}
-                  className={`filter-pill text-xs ${selectedGroups.includes(group.id) ? 'filter-pill-active' : 'filter-pill-inactive'
-                    }`}
-                >
-                  {group.name} <span className="opacity-70">({group.memberCount})</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
     </div >
   )
 }
