@@ -167,9 +167,8 @@ function mapMembershipStatus(value) {
   const v = value.toUpperCase().trim();
 
   if (v === 'M') return 'Member';
-  if (v === 'R' || v === 'M?') return 'RegularAttender';
+  if (v === 'R' || v === 'M?' || v === 'YP') return 'RegularAttender';
   if (v === 'Y') return 'Youth';
-  if (v === 'YP') return 'YouthParent';
 
   return 'Other';
 }

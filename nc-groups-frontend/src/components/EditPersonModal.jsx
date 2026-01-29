@@ -149,7 +149,6 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
                 <option value="Member">Member</option>
                 <option value="RegularAttender">Regular Attender</option>
                 <option value="Youth">Youth</option>
-                <option value="YouthParent">Youth Parent</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -226,8 +225,8 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
                   <label
                     key={group.id}
                     className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedGroups.includes(group.id)
-                        ? 'bg-nc-green/10 text-nc-green'
-                        : 'hover:bg-gray-50'
+                      ? 'bg-nc-green/10 text-nc-green'
+                      : 'hover:bg-gray-50'
                       }`}
                   >
                     <input

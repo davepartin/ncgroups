@@ -67,6 +67,5 @@ enum MembershipStatus {
   Member
   RegularAttender
   Youth
-  YouthParent
   Other
 }

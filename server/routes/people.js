@@ -35,8 +35,6 @@ router.get('/', async (req, res) => {
       search,
       group,
       gender,
-      group,
-      gender,
       ageGroup,
       membershipStatus,
       hasPhone,
