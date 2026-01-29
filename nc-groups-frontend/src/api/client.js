@@ -95,6 +95,12 @@ export const createGroup = async (groupData) => {
   })
 }
 
+export const deleteGroup = async (id) => {
+  return apiRequest(`/api/groups/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 // Text Blast
 export const sendTextBlast = async (message, filters) => {
   return apiRequest('/api/text-blast', {

@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getPeople, getGroups, createPerson, createGroup, logout, getFilteredPhones } from '../api/client'
+import { getPeople, getGroups, createPerson, createGroup, deleteGroup, logout, getFilteredPhones } from '../api/client'
 import FilterBar from '../components/FilterBar'
 import PersonList from '../components/PersonList'
 import TextBlastModal from '../components/TextBlastModal'
 import AddPersonModal from '../components/AddPersonModal'
 import AddGroupModal from '../components/AddGroupModal'
+import ManageGroupsModal from '../components/ManageGroupsModal'
 import EditPersonModal from '../components/EditPersonModal'
 
 export default function Dashboard() {
@@ -28,7 +29,9 @@ export default function Dashboard() {
   // Modal state
   const [showTextBlast, setShowTextBlast] = useState(false)
   const [showAddPerson, setShowAddPerson] = useState(false)
+  const [showAddPerson, setShowAddPerson] = useState(false)
   const [showAddGroup, setShowAddGroup] = useState(false)
+  const [showManageGroups, setShowManageGroups] = useState(false)
   const [editingPerson, setEditingPerson] = useState(null)
 
   // Load data on mount
@@ -67,6 +70,19 @@ export default function Dashboard() {
       loadData()
     } catch (err) {
       alert('Failed to add group')
+    }
+  }
+
+  const handleDeleteGroup = async (groupId) => {
+    try {
+      await deleteGroup(groupId)
+      // Check if deleted group was selected, if so, deselect it
+      if (selectedGroups.includes(groupId)) {
+        setSelectedGroups(selectedGroups.filter(id => id !== groupId))
+      }
+      loadData()
+    } catch (err) {
+      alert('Failed to delete group')
     }
   }
 
