@@ -17,7 +17,7 @@ export default function FilterBar({
 
   // Age group options
   const ageGroups = [
-    { value: null, label: 'Everyone' },
+    { value: null, label: 'All' },
     { value: 'Adult', label: 'Adults' },
     { value: 'Youth', label: 'Youth' },
     { value: 'Child', label: 'Children' },
@@ -43,7 +43,7 @@ export default function FilterBar({
 
   return (
     <div className="bg-white border-b border-gray-200 sticky top-[132px] z-20">
-      <div className="max-w-4xl mx-auto px-4 py-3 space-y-3">
+      <div className="max-w-4xl mx-auto px-4 py-2 space-y-2">
 
         {/* Row 1: Age Group Filter */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
@@ -90,13 +90,13 @@ export default function FilterBar({
             onClick={() => setSelectedMembershipStatus('Member')}
             className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Member' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
           >
-            Members
+            Mem
           </button>
           <button
             onClick={() => setSelectedMembershipStatus('RegularAttender')}
             className={`filter-pill shrink-0 ${selectedMembershipStatus === 'RegularAttender' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
           >
-            Regular Attenders
+            Reg Att
           </button>
           <button
             onClick={() => setSelectedMembershipStatus('Youth')}

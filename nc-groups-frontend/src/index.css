@@ -10,7 +10,7 @@
 
 @layer components {
   .filter-pill {
-    @apply px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border shadow-sm active:scale-95;
+    @apply px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border shadow-sm active:scale-95;
   }
 
   .filter-pill-inactive {
