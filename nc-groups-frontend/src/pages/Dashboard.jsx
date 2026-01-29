@@ -428,12 +428,19 @@ export default function Dashboard() {
           person={editingPerson}
           groups={groups}
           onClose={() => setEditingPerson(null)}
-          onSave={(updatedPerson) => {
+          onSave={async (updatedPerson) => {
             // Update the person in the local state
             setPeople(prevPeople =>
               prevPeople.map(p => p.id === updatedPerson.id ? updatedPerson : p)
             )
             setEditingPerson(null)
+            // Reload groups to update member counts
+            try {
+              const groupsRes = await getGroups()
+              setGroups(groupsRes.groups)
+            } catch (err) {
+              console.error('Failed to reload groups:', err)
+            }
           }}
         />
       )}
