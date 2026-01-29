@@ -251,7 +251,7 @@ export default function Dashboard() {
               disabled={actionDisabled || copyLoading}
               className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm ${copied
                 ? 'bg-green-600 text-white'
-                : 'bg-nc-mustard text-white hover:opacity-90'
+                : 'bg-nc-rose text-white hover:opacity-90'
                 } ${actionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {copied ? (
