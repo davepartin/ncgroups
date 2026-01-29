@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getPeople, getGroups, createPerson, createGroup, logout } from '../api/client'
+import { getPeople, getGroups, createPerson, createGroup, logout, getFilteredPhones } from '../api/client'
 import FilterBar from '../components/FilterBar'
 import PersonList from '../components/PersonList'
-import ActionBar from '../components/ActionBar'
 import TextBlastModal from '../components/TextBlastModal'
 import AddPersonModal from '../components/AddPersonModal'
 import AddGroupModal from '../components/AddGroupModal'
@@ -21,6 +20,10 @@ export default function Dashboard() {
 
   // Sort: 'firstName' | 'lastName'
   const [sortBy, setSortBy] = useState('lastName')
+
+  // Action state
+  const [copyLoading, setCopyLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   // Modal state
   const [showTextBlast, setShowTextBlast] = useState(false)
@@ -145,7 +148,35 @@ export default function Dashboard() {
     setSearch('')
   }
 
+  // Handle Copy Numbers
+  const handleCopyNumbers = async () => {
+    if (textablePeople.length === 0) return
+
+    setCopyLoading(true)
+    try {
+      const filters = {
+        groupId: selectedGroup,
+        gender: selectedGender,
+        ageGroup: selectedAgeGroup
+      }
+
+      const { phones } = await getFilteredPhones(filters)
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(phones.join(', '))
+
+      // Show feedback
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      alert('Failed to copy numbers: ' + err.message)
+    } finally {
+      setCopyLoading(false)
+    }
+  }
+
   const hasActiveFilters = selectedGroup || selectedAgeGroup || selectedGender || search
+  const actionDisabled = textablePeople.length === 0
 
   return (
     <div className="min-h-screen bg-nc-light flex flex-col">
@@ -185,30 +216,73 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Search Bar */}
+      {/* Search & Actions Bar */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-[68px] z-30">
-        <div className="max-w-4xl mx-auto">
-          <div className="relative">
+        <div className="max-w-4xl mx-auto flex gap-3">
+          {/* Search Input (40%) */}
+          <div className="relative w-[40%]">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
-              placeholder="Search by name..."
+              placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl border-2 border-gray-200 focus:border-nc-green focus:outline-none transition-colors"
+              className="w-full pl-9 pr-2 py-2.5 rounded-xl border-2 border-gray-200 focus:border-nc-green focus:outline-none transition-colors text-sm"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             )}
+          </div>
+
+          {/* Action Buttons (Remaining space) */}
+          <div className="flex-1 flex gap-2">
+            {/* Copy Numbers Button */}
+            <button
+              onClick={handleCopyNumbers}
+              disabled={actionDisabled || copyLoading}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm border ${copied
+                  ? 'bg-green-600 text-white border-green-600'
+                  : 'bg-white text-nc-blue border-nc-blue/30 hover:bg-nc-blue/5'
+                } ${actionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {copied ? (
+                <>
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="truncate">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                  <span className="truncate">Copy #s ({textablePeople.length})</span>
+                </>
+              )}
+            </button>
+
+            {/* Text Blast Button */}
+            <button
+              onClick={() => setShowTextBlast(true)}
+              disabled={actionDisabled}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all ${actionDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-nc-green hover:bg-nc-green-dark'
+                }`}
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+              </svg>
+              <span className="truncate">Blast</span>
+            </button>
           </div>
         </div>
       </div>
@@ -281,16 +355,7 @@ export default function Dashboard() {
         )}
       </main>
 
-      {/* Action Bar */}
-      <ActionBar
-        count={textablePeople.length}
-        filters={{
-          groupId: selectedGroup,
-          gender: selectedGender,
-          ageGroup: selectedAgeGroup
-        }}
-        onTextBlast={() => setShowTextBlast(true)}
-      />
+
 
       {/* Text Blast Modal */}
       {showTextBlast && (
