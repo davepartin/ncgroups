@@ -417,15 +417,17 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Edit Person Modal */}
       {editingPerson && (
         <EditPersonModal
           person={editingPerson}
           groups={groups}
           onClose={() => setEditingPerson(null)}
-          onSave={() => {
+          onSave={(updatedPerson) => {
+            // Update the person in the local state
+            setPeople(prevPeople =>
+              prevPeople.map(p => p.id === updatedPerson.id ? updatedPerson : p)
+            )
             setEditingPerson(null)
-            loadData()
           }}
         />
       )}

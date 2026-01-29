@@ -48,15 +48,24 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
         })
       })
 
+      console.log('Save request sent, membershipStatus:', membershipStatus)
+
       const data = await response.json()
+
+      console.log('Save response received:', data)
+      console.log('Response membershipStatus:', data.membershipStatus)
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to update person')
       }
 
+      // Update local state with the response data
+      setMembershipStatus(data.membershipStatus || '')
+
       onSave(data)
       onClose()
     } catch (err) {
+      console.error('Save error:', err)
       setError(err.message || 'Failed to update person')
     } finally {
       setSaving(false)

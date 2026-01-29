@@ -278,10 +278,19 @@ router.put('/:id', async (req, res) => {
       }
     });
 
-    res.json({
+
+    const responseData = {
       ...updatedPerson,
       groups: updatedPerson.groups.map(pg => pg.group)
+    };
+
+    console.log('PUT /api/people/:id response:', {
+      id: responseData.id,
+      firstName: responseData.firstName,
+      membershipStatus: responseData.membershipStatus
     });
+
+    res.json(responseData);
   } catch (error) {
     console.error('Error updating person:', error);
     res.status(500).json({ error: 'Failed to update person' });

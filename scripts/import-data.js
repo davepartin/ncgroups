@@ -311,7 +311,6 @@ async function importData() {
             lastName: lastName || '',
             phone: phone,
             gender: gender,
-            gender: gender,
             ageGroup: ageGroup,
             membershipStatus: mapMembershipStatus(record['Memb / RegAtten']),
             isOptedOut: optedOut
