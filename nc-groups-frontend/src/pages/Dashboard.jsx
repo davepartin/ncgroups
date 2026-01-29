@@ -249,9 +249,9 @@ export default function Dashboard() {
             <button
               onClick={handleCopyNumbers}
               disabled={actionDisabled || copyLoading}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm border ${copied
-                ? 'bg-green-600 text-white border-green-600'
-                : 'bg-white text-nc-blue border-nc-blue/30 hover:bg-nc-blue/5'
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm ${copied
+                  ? 'bg-green-600 text-white'
+                  : 'bg-nc-mustard text-white hover:opacity-90'
                 } ${actionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {copied ? (
@@ -275,7 +275,7 @@ export default function Dashboard() {
             <button
               onClick={() => setShowTextBlast(true)}
               disabled={actionDisabled}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all ${actionDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-nc-green hover:bg-nc-green-dark'
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all ${actionDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-nc-blue hover:opacity-90'
                 }`}
             >
               <span className="truncate">Mass Text</span>
