@@ -97,6 +97,7 @@ export default function Dashboard() {
         return false
       }
 
+      return true
     })
   }, [people, search, selectedGroups, selectedAgeGroup, selectedGender])
 
