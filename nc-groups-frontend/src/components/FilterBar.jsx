@@ -2,8 +2,8 @@ import { useState } from 'react'
 
 export default function FilterBar({
   groups,
-  selectedGroup,
-  setSelectedGroup,
+  selectedGroups,
+  setSelectedGroups,
   selectedAgeGroup,
   setSelectedAgeGroup,
   selectedGender,
@@ -33,19 +33,19 @@ export default function FilterBar({
 
   // Categorize groups
   const dGroups = groups.filter(g => g.name.includes('D-Group') || g.name.includes('Group'))
-  const ministryGroups = groups.filter(g => 
-    !g.name.includes('D-Group') && 
+  const ministryGroups = groups.filter(g =>
+    !g.name.includes('D-Group') &&
     !g.name.includes('Group') &&
     !['ALL NCYG', 'Kids Min Parents', 'Youth Parents'].includes(g.name)
   )
-  const specialGroups = groups.filter(g => 
+  const specialGroups = groups.filter(g =>
     ['ALL NCYG', 'Kids Min Parents', 'Youth Parents'].includes(g.name)
   )
 
   return (
     <div className="bg-white border-b border-gray-200 sticky top-[132px] z-20">
       <div className="max-w-4xl mx-auto px-4 py-3 space-y-3">
-        
+
         {/* Row 1: Age Group Filter */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Who:</span>
@@ -58,9 +58,8 @@ export default function FilterBar({
                   setSelectedGender(null)
                 }
               }}
-              className={`filter-pill shrink-0 ${
-                selectedAgeGroup === ag.value ? 'filter-pill-active' : 'filter-pill-inactive'
-              }`}
+              className={`filter-pill shrink-0 ${selectedAgeGroup === ag.value ? 'filter-pill-active' : 'filter-pill-inactive'
+                }`}
             >
               {ag.label}
             </button>
@@ -75,9 +74,8 @@ export default function FilterBar({
               <button
                 key={g.value || 'all'}
                 onClick={() => setSelectedGender(g.value)}
-                className={`filter-pill shrink-0 ${
-                  selectedGender === g.value ? 'filter-pill-active' : 'filter-pill-inactive'
-                }`}
+                className={`filter-pill shrink-0 ${selectedGender === g.value ? 'filter-pill-active' : 'filter-pill-inactive'
+                  }`}
               >
                 {g.label}
               </button>
@@ -88,30 +86,28 @@ export default function FilterBar({
         {/* Row 3: Ministry Group Filter */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Group:</span>
-          
+
           <button
-            onClick={() => setSelectedGroup(null)}
-            className={`filter-pill shrink-0 ${
-              !selectedGroup ? 'filter-pill-active' : 'filter-pill-inactive'
-            }`}
+            onClick={() => setSelectedGroups([])}
+            className={`filter-pill shrink-0 ${selectedGroups.length === 0 ? 'filter-pill-active' : 'filter-pill-inactive'
+              }`}
           >
             All Groups
           </button>
 
           <button
             onClick={() => setShowGroups(!showGroups)}
-            className={`filter-pill shrink-0 flex items-center gap-1 ${
-              selectedGroup ? 'filter-pill-active' : 'filter-pill-inactive'
-            }`}
+            className={`filter-pill shrink-0 flex items-center gap-1 ${selectedGroup ? 'filter-pill-active' : 'filter-pill-inactive'
+              }`}
           >
-            {selectedGroup 
-              ? groups.find(g => g.id === selectedGroup)?.name || 'Select Group'
+            {selectedGroups.length > 0
+              ? `${selectedGroups.length} Groups Selected`
               : 'Select Group'
             }
-            <svg 
-              className={`w-4 h-4 transition-transform ${showGroups ? 'rotate-180' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className={`w-4 h-4 transition-transform ${showGroups ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -122,6 +118,16 @@ export default function FilterBar({
         {/* Group Dropdown */}
         {showGroups && (
           <div className="bg-nc-light rounded-xl p-4 space-y-4 border border-gray-200">
+            {/* Header / Done Button */}
+            <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Select Groups (Multiple)</span>
+              <button
+                onClick={() => setShowGroups(false)}
+                className="bg-nc-green text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm hover:bg-nc-green-dark transition-colors"
+              >
+                Done
+              </button>
+            </div>
             {/* Special Groups */}
             {specialGroups.length > 0 && (
               <div>
@@ -131,12 +137,14 @@ export default function FilterBar({
                     <button
                       key={group.id}
                       onClick={() => {
-                        setSelectedGroup(group.id)
-                        setShowGroups(false)
+                        if (selectedGroups.includes(group.id)) {
+                          setSelectedGroups(selectedGroups.filter(id => id !== group.id))
+                        } else {
+                          setSelectedGroups([...selectedGroups, group.id])
+                        }
                       }}
-                      className={`filter-pill text-xs ${
-                        selectedGroup === group.id ? 'filter-pill-active' : 'filter-pill-inactive'
-                      }`}
+                      className={`filter-pill text-xs ${selectedGroups.includes(group.id) ? 'filter-pill-active' : 'filter-pill-inactive'
+                        }`}
                     >
                       {group.name} <span className="opacity-70">({group.memberCount})</span>
                     </button>
@@ -153,12 +161,14 @@ export default function FilterBar({
                   <button
                     key={group.id}
                     onClick={() => {
-                      setSelectedGroup(group.id)
-                      setShowGroups(false)
+                      if (selectedGroups.includes(group.id)) {
+                        setSelectedGroups(selectedGroups.filter(id => id !== group.id))
+                      } else {
+                        setSelectedGroups([...selectedGroups, group.id])
+                      }
                     }}
-                    className={`filter-pill text-xs ${
-                      selectedGroup === group.id ? 'filter-pill-active' : 'filter-pill-inactive'
-                    }`}
+                    className={`filter-pill text-xs ${selectedGroups.includes(group.id) ? 'filter-pill-active' : 'filter-pill-inactive'
+                      }`}
                   >
                     {group.name} <span className="opacity-70">({group.memberCount})</span>
                   </button>
@@ -174,12 +184,14 @@ export default function FilterBar({
                   <button
                     key={group.id}
                     onClick={() => {
-                      setSelectedGroup(group.id)
-                      setShowGroups(false)
+                      if (selectedGroups.includes(group.id)) {
+                        setSelectedGroups(selectedGroups.filter(id => id !== group.id))
+                      } else {
+                        setSelectedGroups([...selectedGroups, group.id])
+                      }
                     }}
-                    className={`filter-pill text-xs ${
-                      selectedGroup === group.id ? 'filter-pill-active' : 'filter-pill-inactive'
-                    }`}
+                    className={`filter-pill text-xs ${selectedGroups.includes(group.id) ? 'filter-pill-active' : 'filter-pill-inactive'
+                      }`}
                   >
                     {group.name} <span className="opacity-70">({group.memberCount})</span>
                   </button>
