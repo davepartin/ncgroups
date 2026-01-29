@@ -6,6 +6,7 @@ import ActionBar from '../components/ActionBar'
 import TextBlastModal from '../components/TextBlastModal'
 import AddPersonModal from '../components/AddPersonModal'
 import AddGroupModal from '../components/AddGroupModal'
+import EditPersonModal from '../components/EditPersonModal'
 
 export default function Dashboard() {
   const [people, setPeople] = useState([])
@@ -22,6 +23,7 @@ export default function Dashboard() {
   const [showTextBlast, setShowTextBlast] = useState(false)
   const [showAddPerson, setShowAddPerson] = useState(false)
   const [showAddGroup, setShowAddGroup] = useState(false)
+  const [editingPerson, setEditingPerson] = useState(null)
 
   // Load data on mount
   useEffect(() => {
@@ -243,7 +245,7 @@ export default function Dashboard() {
             <div className="w-8 h-8 border-4 border-nc-green border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <PersonList people={filteredPeople} onRefresh={loadData} />
+          <PersonList people={filteredPeople} onPersonClick={setEditingPerson} />
         )}
       </main>
 
@@ -286,6 +288,19 @@ export default function Dashboard() {
         <AddGroupModal
           onClose={() => setShowAddGroup(false)}
           onAdd={handleAddGroup}
+        />
+      )}
+
+      {/* Edit Person Modal */}
+      {editingPerson && (
+        <EditPersonModal
+          person={editingPerson}
+          groups={groups}
+          onClose={() => setEditingPerson(null)}
+          onSave={() => {
+            setEditingPerson(null)
+            loadData()
+          }}
         />
       )}
     </div>
