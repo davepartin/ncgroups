@@ -8,6 +8,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
   const [phone, setPhone] = useState(person.phone || '')
   const [email, setEmail] = useState(person.email || '')
   const [ageGroup, setAgeGroup] = useState(person.ageGroup || '')
+  const [membershipStatus, setMembershipStatus] = useState(person.membershipStatus || '')
   const [gender, setGender] = useState(person.gender || '')
   const [selectedGroups, setSelectedGroups] = useState(
     person.groups?.map(g => g.id) || []
@@ -40,6 +41,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
           phone: phone.trim() || null,
           email: email.trim() || null,
           ageGroup: ageGroup || null,
+          membershipStatus: membershipStatus || null,
           gender: gender || null,
           isOptedOut: isOptedOut,
           groupIds: selectedGroups
@@ -132,8 +134,25 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
             </div>
           </div>
 
-          {/* Demographics Row */}
+          {/* Demographics Row 1 */}
           <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Membership Status
+              </label>
+              <select
+                value={membershipStatus}
+                onChange={(e) => setMembershipStatus(e.target.value)}
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-nc-green focus:outline-none"
+              >
+                <option value="">Not Set</option>
+                <option value="Member">Member</option>
+                <option value="RegularAttender">Regular Attender</option>
+                <option value="Youth">Youth</option>
+                <option value="YouthParent">Youth Parent</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Age Group
@@ -149,6 +168,10 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
                 <option value="Child">Child</option>
               </select>
             </div>
+          </div>
+
+          {/* Demographics Row 2 */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Gender
@@ -181,14 +204,12 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
               <button
                 type="button"
                 onClick={() => setIsOptedOut(!isOptedOut)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  isOptedOut ? 'bg-nc-rose' : 'bg-gray-300'
-                }`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isOptedOut ? 'bg-nc-rose' : 'bg-gray-300'
+                  }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    isOptedOut ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isOptedOut ? 'translate-x-6' : 'translate-x-1'
+                    }`}
                 />
               </button>
             </label>
@@ -204,11 +225,10 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
                 {groups.map(group => (
                   <label
                     key={group.id}
-                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                      selectedGroups.includes(group.id)
+                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedGroups.includes(group.id)
                         ? 'bg-nc-green/10 text-nc-green'
                         : 'hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     <input
                       type="checkbox"
