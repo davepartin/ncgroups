@@ -23,15 +23,12 @@ export default function FilterBar({
     { value: 'Child', label: 'Children' },
   ]
 
-  // Gender options (only show when age group is selected, except for Children)
+  // Gender options
   const genderOptions = [
     { value: null, label: 'All' },
     { value: 'Male', label: 'Males' },
     { value: 'Female', label: 'Females' },
   ]
-
-  // Show gender filter for Adults and Youth
-  const showGenderFilter = selectedAgeGroup === 'Adult' || selectedAgeGroup === 'Youth'
 
   // Categorize groups
   const dGroups = groups.filter(g => g.name.includes('D-Group') || g.name.includes('Group'))
@@ -54,12 +51,7 @@ export default function FilterBar({
           {ageGroups.map(ag => (
             <button
               key={ag.value || 'all'}
-              onClick={() => {
-                setSelectedAgeGroup(ag.value)
-                if (!ag.value || ag.value === 'Child') {
-                  setSelectedGender(null)
-                }
-              }}
+              onClick={() => setSelectedAgeGroup(ag.value)}
               className={`filter-pill shrink-0 ${selectedAgeGroup === ag.value ? 'filter-pill-active' : 'filter-pill-inactive'
                 }`}
             >
@@ -68,59 +60,57 @@ export default function FilterBar({
           ))}
         </div>
 
-        {/* Row 2: Gender Filter (conditional) */}
-        {showGenderFilter && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Gender:</span>
-            {genderOptions.map(g => (
-              <button
-                key={g.value || 'all'}
-                onClick={() => setSelectedGender(g.value)}
-                className={`filter-pill shrink-0 ${selectedGender === g.value ? 'filter-pill-active' : 'filter-pill-inactive'
-                  }`}
-              >
-                {g.label}
-              </button>
-            ))}
-          </div>
-        )}
 
-        {/* Row 3: Membership Status Filter (conditional) */}
-        {showGenderFilter && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Status:</span>
+        {/* Row 2: Gender Filter */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Gender:</span>
+          {genderOptions.map(g => (
             <button
-              onClick={() => setSelectedMembershipStatus(null)}
-              className={`filter-pill shrink-0 ${selectedMembershipStatus === null ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+              key={g.value || 'all'}
+              onClick={() => setSelectedGender(g.value)}
+              className={`filter-pill shrink-0 ${selectedGender === g.value ? 'filter-pill-active' : 'filter-pill-inactive'
+                }`}
             >
-              All
+              {g.label}
             </button>
-            <button
-              onClick={() => setSelectedMembershipStatus('Member')}
-              className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Member' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
-            >
-              Members
-            </button>
-            <button
-              onClick={() => setSelectedMembershipStatus('RegularAttender')}
-              className={`filter-pill shrink-0 ${selectedMembershipStatus === 'RegularAttender' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
-            >
-              Regular Attenders
-            </button>
-            <button
-              onClick={() => setSelectedMembershipStatus('Youth')}
-              className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Youth' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
-            >
-              Youth
-            </button>
-            <button
-              onClick={() => setSelectedMembershipStatus('Other')}
-              className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Other' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
-            >
-              Other
-            </button>
-          </div>
-        )}
+          ))}
+        </div>
+
+
+        {/* Row 3: Membership Status Filter */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Status:</span>
+          <button
+            onClick={() => setSelectedMembershipStatus(null)}
+            className={`filter-pill shrink-0 ${selectedMembershipStatus === null ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setSelectedMembershipStatus('Member')}
+            className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Member' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+          >
+            Members
+          </button>
+          <button
+            onClick={() => setSelectedMembershipStatus('RegularAttender')}
+            className={`filter-pill shrink-0 ${selectedMembershipStatus === 'RegularAttender' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+          >
+            Regular Attenders
+          </button>
+          <button
+            onClick={() => setSelectedMembershipStatus('Youth')}
+            className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Youth' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+          >
+            Youth
+          </button>
+          <button
+            onClick={() => setSelectedMembershipStatus('Other')}
+            className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Other' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+          >
+            Other
+          </button>
+        </div>
 
         {/* Row 4: Ministry Group Filter */}
         <div className="flex items-center gap-2">
