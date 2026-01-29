@@ -19,6 +19,15 @@ export default function PersonList({ people, onPersonClick }) {
             <h3 className={`font-semibold ${person.isOptedOut ? 'text-nc-rose' : 'text-nc-green'}`}>
               {person.firstName} {person.lastName}
               {person.isOptedOut && <span className="ml-2 text-xs font-normal">(opted out)</span>}
+              {person.membershipStatus && (
+                <span className={`ml-2 text-xs font-normal px-2 py-0.5 rounded-full ${person.membershipStatus === 'Member' ? 'bg-nc-green/10 text-nc-green' :
+                    person.membershipStatus === 'RegularAttender' ? 'bg-nc-blue/10 text-nc-blue' :
+                      person.membershipStatus === 'Youth' ? 'bg-purple-100 text-purple-700' :
+                        'bg-gray-100 text-gray-600'
+                  }`}>
+                  {person.membershipStatus.replace(/([A-Z])/g, ' $1').trim()}
+                </span>
+              )}
             </h3>
             <div className="text-sm text-gray-500 flex flex-wrap gap-x-2">
               {person.ageGroup && <span>{person.ageGroup}</span>}
