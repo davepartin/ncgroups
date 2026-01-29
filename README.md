@@ -15,9 +15,9 @@ A staff-only app for managing church contacts and enabling quick group communica
 
 - **Backend**: Node.js + Express
 - **Database**: PostgreSQL with Prisma ORM
-- **Frontend**: React + Tailwind CSS (coming soon)
-- **Hosting**: Railway
-- **SMS**: Twilio via n8n webhook
+- **Frontend**: React + Tailwind CSS
+- **Hosting**: Frontend on Vercel, Backend on Railway
+- **SMS**: Twilio
 
 ## Setup
 
@@ -25,13 +25,12 @@ A staff-only app for managing church contacts and enabling quick group communica
 
 - Node.js 18+
 - PostgreSQL database (Railway provides this)
-- n8n workflow for Twilio SMS (already configured)
 
 ### Installation
 
 1. Clone the repository:
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/davepartin/ncgroups.git
    cd nc-groups
    ```
 
@@ -54,6 +53,8 @@ A staff-only app for managing church contacts and enabling quick group communica
    # Option B: Using raw SQL
    psql $DATABASE_URL < prisma/schema.sql
    ```
+   If you already have a database with the old gender enum (Guy/Lady), run once:
+   `psql $DATABASE_URL -f prisma/migrate-gender-to-male-female.sql`
 
 5. Generate Prisma client:
    ```bash
@@ -75,7 +76,9 @@ A staff-only app for managing church contacts and enabling quick group communica
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | Secret for JWT authentication |
 | `STAFF_PASSWORD` | Password for staff login |
-| `N8N_WEBHOOK_URL` | n8n webhook for Twilio SMS |
+| `TWILIO_ACCOUNT_SID` | Twilio Account SID (from Twilio Console) |
+| `TWILIO_AUTH_TOKEN` | Twilio Auth Token (from Twilio Console) |
+| `TWILIO_PHONE_NUMBER` | Twilio phone number for sending SMS |
 | `PORT` | Server port (default: 3000) |
 
 ## Data Import
@@ -85,7 +88,7 @@ The import script (`scripts/import-data.js`) handles:
 - **Name splitting**: "First Last" → firstName + lastName
 - **Couples**: "Jessie and Brett Lafollette" → 2 separate records
 - **Phone cleaning**: Removes commas, non-digits, validates 10-digit US numbers
-- **Gender mapping**: f → Lady, m → Guy
+- **Gender mapping**: f → Female, m → Male
 - **Age groups**: M → Adult, Y → Youth, C → Child, YP → Adult + Youth Parents group
 - **Opt-outs**: Detects "opt out" in name field
 - **Group memberships**: Reads TRUE/FALSE from 29+ group columns
@@ -114,7 +117,17 @@ npm run db:studio
 npm run db:migrate
 ```
 
-## Deployment (Railway)
+## Deployment
+
+### Live Application
+- **Frontend**: https://nc-groups-frontend.vercel.app/
+- **Backend API**: https://ncgroups-api-production.up.railway.app
+- **GitHub**: https://github.com/davepartin/ncgroups
+- **Twilio Console**: https://console.twilio.com/?frameUrl=%2Fconsole%3Fx-target-region%3Dus1
+
+### Backend (Railway)
+
+- **Railway Project**: https://railway.com/project/d15a9a99-cd22-4318-9667-401bdc9df4ee?environmentId=cc814241-b48b-4615-8bc1-e232f74f4136
 
 1. Create a new Railway project
 2. Add PostgreSQL database
@@ -124,21 +137,17 @@ npm run db:migrate
 
 Railway will automatically run `npm install` and `npm start`.
 
-## n8n Webhook
+### Frontend (Vercel)
 
-The Text Blast feature sends a POST request to your n8n workflow:
+1. Connect your GitHub repo to Vercel
+2. Set root directory to `nc-groups-frontend`
+3. Configure build settings:
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+4. Set environment variable `VITE_API_URL` to your Railway backend URL
+5. Deploy!
 
-```
-POST https://n8n-on-fly-withered-hill-6831.fly.dev/webhook/4ad4d398-9dfe-400f-8599-9226084afb79
-
-Body:
-{
-  "message": "Hey NC family! ...",
-  "numbers": "9139017581,9136203741,9132312067"
-}
-```
-
-The workflow sends SMS via Twilio and logs to Google Sheets.
+Text Blast sends SMS directly via the Twilio API using the credentials above.
 
 ## License
 

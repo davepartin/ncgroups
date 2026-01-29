@@ -24,8 +24,8 @@ export default function FilterBar({
   // Gender options (only show when age group is selected, except for Children)
   const genderOptions = [
     { value: null, label: 'All' },
-    { value: 'Guy', label: 'Guys' },
-    { value: 'Lady', label: 'Ladies' },
+    { value: 'Male', label: 'Males' },
+    { value: 'Female', label: 'Females' },
   ]
 
   // Show gender filter for Adults and Youth

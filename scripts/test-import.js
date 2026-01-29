@@ -86,8 +86,8 @@ function cleanPhone(phoneField) {
 function mapGender(genderField) {
   if (!genderField) return null;
   const g = genderField.toLowerCase().trim();
-  if (g === 'f') return 'Lady';
-  if (g === 'm') return 'Guy';
+  if (g === 'f') return 'Female';
+  if (g === 'm') return 'Male';
   return null;
 }
 
@@ -131,8 +131,8 @@ async function testImport() {
     adults: 0,
     youth: 0,
     children: 0,
-    guys: 0,
-    ladies: 0,
+    males: 0,
+    females: 0,
     youthParents: 0,
     groupMemberships: {}
   };
@@ -218,8 +218,8 @@ async function testImport() {
             if (ageGroup === 'Adult') stats.adults++;
             if (ageGroup === 'Youth') stats.youth++;
             if (ageGroup === 'Child') stats.children++;
-            if (gender === 'Guy') stats.guys++;
-            if (gender === 'Lady') stats.ladies++;
+            if (gender === 'Male') stats.males++;
+            if (gender === 'Female') stats.females++;
             if (isYouthParent) stats.youthParents++;
           }
         }
@@ -239,9 +239,9 @@ async function testImport() {
         console.log('');
         
         console.log('👤 By Gender:');
-        console.log(`   Guys: ${stats.guys}`);
-        console.log(`   Ladies: ${stats.ladies}`);
-        console.log(`   Unknown: ${stats.total - stats.guys - stats.ladies}`);
+        console.log(`   Males: ${stats.males}`);
+        console.log(`   Females: ${stats.females}`);
+        console.log(`   Unknown: ${stats.total - stats.males - stats.females}`);
         console.log('');
         
         console.log('📁 Group Memberships:');

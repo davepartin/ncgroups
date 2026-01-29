@@ -17,7 +17,10 @@ export default function Dashboard() {
   // Filter state
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [selectedAgeGroup, setSelectedAgeGroup] = useState(null) // Adult, Youth, Child
-  const [selectedGender, setSelectedGender] = useState(null) // Guy, Lady
+  const [selectedGender, setSelectedGender] = useState(null) // Male, Female
+
+  // Sort: 'firstName' | 'lastName'
+  const [sortBy, setSortBy] = useState('lastName')
 
   // Modal state
   const [showTextBlast, setShowTextBlast] = useState(false)
@@ -94,6 +97,16 @@ export default function Dashboard() {
     })
   }, [people, search, selectedGroup, selectedAgeGroup, selectedGender])
 
+  // Sorted list for display
+  const sortedPeople = useMemo(() => {
+    const key = sortBy === 'firstName' ? 'firstName' : 'lastName'
+    return [...filteredPeople].sort((a, b) => {
+      const A = (a[key] || '').toLowerCase()
+      const B = (b[key] || '').toLowerCase()
+      return A.localeCompare(B)
+    })
+  }, [filteredPeople, sortBy])
+
   // People with phone numbers (for texting)
   const textablePeople = useMemo(() => {
     return filteredPeople.filter(p => p.phone && !p.isOptedOut)
@@ -104,12 +117,12 @@ export default function Dashboard() {
     const parts = []
 
     if (selectedAgeGroup && selectedGender) {
-      // Combined: "Adult Guys", "Youth Ladies"
-      parts.push(`${selectedAgeGroup} ${selectedGender === 'Guy' ? 'Guys' : 'Ladies'}`)
+      // Combined: "Adult Males", "Youth Females"
+      parts.push(`${selectedAgeGroup} ${selectedGender === 'Male' ? 'Males' : 'Females'}`)
     } else if (selectedAgeGroup) {
       parts.push(`All ${selectedAgeGroup}s`)
     } else if (selectedGender) {
-      parts.push(`All ${selectedGender === 'Guy' ? 'Guys' : 'Ladies'}`)
+      parts.push(`All ${selectedGender === 'Male' ? 'Males' : 'Females'}`)
     } else {
       parts.push('Everyone')
     }
@@ -215,26 +228,43 @@ export default function Dashboard() {
 
       {/* Results Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div>
-            <h2 className="font-display font-semibold text-nc-ink">
-              {filterDescription}
-            </h2>
-            <p className="text-sm text-gray-500">
-              {filteredPeople.length} {filteredPeople.length === 1 ? 'person' : 'people'}
-              {textablePeople.length !== filteredPeople.length && (
-                <span className="text-nc-green"> · {textablePeople.length} with phone</span>
-              )}
-            </p>
+        <div className="max-w-4xl mx-auto flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-display font-semibold text-nc-ink">
+                {filterDescription}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {filteredPeople.length} {filteredPeople.length === 1 ? 'person' : 'people'}
+                {textablePeople.length !== filteredPeople.length && (
+                  <span className="text-nc-green"> · {textablePeople.length} with phone</span>
+                )}
+              </p>
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-nc-rose text-sm font-medium hover:underline"
+              >
+                Clear All
+              </button>
+            )}
           </div>
-          {hasActiveFilters && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sort:</span>
             <button
-              onClick={clearFilters}
-              className="text-nc-rose text-sm font-medium hover:underline"
+              onClick={() => setSortBy('firstName')}
+              className={`filter-pill shrink-0 ${sortBy === 'firstName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
             >
-              Clear All
+              First Name
             </button>
-          )}
+            <button
+              onClick={() => setSortBy('lastName')}
+              className={`filter-pill shrink-0 ${sortBy === 'lastName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            >
+              Last Name
+            </button>
+          </div>
         </div>
       </div>
 
@@ -245,7 +275,9 @@ export default function Dashboard() {
             <div className="w-8 h-8 border-4 border-nc-green border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <PersonList people={filteredPeople} onPersonClick={setEditingPerson} />
+          <div className="max-w-4xl mx-auto px-4">
+            <PersonList people={sortedPeople} onPersonClick={setEditingPerson} />
+          </div>
         )}
       </main>
 

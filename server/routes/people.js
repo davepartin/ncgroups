@@ -19,7 +19,7 @@ const router = Router();
  * Query params:
  *   - search: Search firstName and lastName
  *   - group: Filter by group ID
- *   - gender: Filter by gender (Guy, Lady)
+ *   - gender: Filter by gender (Male, Female)
  *   - ageGroup: Filter by age group (Adult, Youth, Child)
  *   - hasPhone: Filter to only people with phone numbers (true/false)
  *   - optedOut: Include opted-out people (true/false, default false)

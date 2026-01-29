@@ -3,7 +3,7 @@
 -- Run this to create the initial schema
 
 -- Create enum types
-CREATE TYPE gender AS ENUM ('Guy', 'Lady');
+CREATE TYPE gender AS ENUM ('Male', 'Female');
 CREATE TYPE age_group AS ENUM ('Adult', 'Youth', 'Child');
 
 -- People table

@@ -52,8 +52,8 @@ model PersonGroup {
 }
 
 enum Gender {
-  Guy
-  Lady
+  Male
+  Female
 }
 
 enum AgeGroup {

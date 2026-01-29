@@ -5,7 +5,7 @@ export default function AddPersonModal({ groups, onClose, onAdd }) {
         firstName: '',
         lastName: '',
         ageGroup: 'Adult',
-        gender: 'Guy',
+        gender: 'Male',
         phone: '',
         selectedGroups: []
     })
@@ -84,8 +84,8 @@ export default function AddPersonModal({ groups, onClose, onAdd }) {
                                 onChange={e => setFormData({ ...formData, gender: e.target.value })}
                                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nc-green focus:outline-none"
                             >
-                                <option value="Guy">Guy</option>
-                                <option value="Lady">Lady</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
                             </select>
                         </div>
                     </div>

@@ -8,7 +8,7 @@
  * - Name splitting (first/last)
  * - "Jessie and Brett Lafollette" → two separate people
  * - Phone number cleaning (removes commas, non-digits)
- * - Gender mapping (f → Lady, m → Guy)
+ * - Gender mapping (f → Female, m → Male)
  * - Age group mapping (M → Adult, Y → Youth, C → Child, YP → Adult + Youth Parents group)
  * - Opt-out detection
  * - Group memberships from boolean columns
@@ -137,8 +137,8 @@ function parseNames(nameField) {
 function mapGender(genderValue) {
   if (!genderValue) return null;
   const g = genderValue.toLowerCase().trim();
-  if (g === 'f') return 'Lady';
-  if (g === 'm') return 'Guy';
+  if (g === 'f') return 'Female';
+  if (g === 'm') return 'Male';
   return null;
 }
 

@@ -159,8 +159,8 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-nc-green focus:outline-none"
               >
                 <option value="">Not Set</option>
-                <option value="Guy">Guy</option>
-                <option value="Lady">Lady</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
               </select>
             </div>
           </div>
