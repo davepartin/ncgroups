@@ -140,7 +140,7 @@ export default function Dashboard() {
     }
 
     return parts.join(' ')
-  }, [selectedAgeGroup, selectedGender, selectedGroup, groups])
+  }, [selectedAgeGroup, selectedGender, selectedGroups, groups])
 
   // Clear all filters
   const clearFilters = () => {
@@ -155,250 +155,244 @@ export default function Dashboard() {
     if (textablePeople.length === 0) return
 
     setCopyLoading(true)
-    try {
-      const filters = {
-        groupId: selectedGroup,
-        gender: selectedGender,
-        ageGroup: selectedAgeGroup
-      }
+    // Use the already filtered list of people
+    const phones = textablePeople.map(p => p.phone)
 
-      const { phones } = await getFilteredPhones(filters)
+    // Copy to clipboard (newlines for better iMessage support)
+    await navigator.clipboard.writeText(phones.join('\n'))
 
-      // Copy to clipboard (newlines for better iMessage support)
-      await navigator.clipboard.writeText(phones.join('\n'))
-
-      // Show feedback
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      alert('Failed to copy numbers: ' + err.message)
-    } finally {
-      setCopyLoading(false)
-    }
+    // Show feedback
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  } catch (err) {
+    alert('Failed to copy numbers: ' + err.message)
+  } finally {
+    setCopyLoading(false)
   }
+}
 
-  const hasActiveFilters = selectedGroup || selectedAgeGroup || selectedGender || search
-  const actionDisabled = textablePeople.length === 0
+const hasActiveFilters = selectedGroups.length > 0 || selectedAgeGroup || selectedGender || search
+const actionDisabled = textablePeople.length === 0
 
-  return (
-    <div className="min-h-screen bg-nc-light flex flex-col">
-      {/* Header */}
-      <header className="bg-nc-green text-white px-4 py-3 shadow-lg sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <span className="font-display font-bold text-lg">nc</span>
-            </div>
-            <div>
-              <h1 className="font-display font-bold text-lg leading-tight">NC Groups</h1>
-              <p className="text-white/70 text-xs">Neighborhood Church</p>
-            </div>
+return (
+  <div className="min-h-screen bg-nc-light flex flex-col">
+    {/* Header */}
+    <header className="bg-nc-green text-white px-4 py-3 shadow-lg sticky top-0 z-40">
+      <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+            <span className="font-display font-bold text-lg">nc</span>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowAddGroup(true)}
-              className="text-white/90 hover:text-white text-sm font-medium px-2 py-1 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              + Group
-            </button>
-            <button
-              onClick={() => setShowAddPerson(true)}
-              className="text-white/90 hover:text-white text-sm font-medium px-2 py-1 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              + Person
-            </button>
-            <div className="w-px h-4 bg-white/20 mx-1" />
-            <button
-              onClick={logout}
-              className="text-white/70 hover:text-white text-sm font-medium px-2 py-1"
-            >
-              Sign Out
-            </button>
+          <div>
+            <h1 className="font-display font-bold text-lg leading-tight">NC Groups</h1>
+            <p className="text-white/70 text-xs">Neighborhood Church</p>
           </div>
         </div>
-      </header>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAddGroup(true)}
+            className="text-white/90 hover:text-white text-sm font-medium px-2 py-1 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            + Group
+          </button>
+          <button
+            onClick={() => setShowAddPerson(true)}
+            className="text-white/90 hover:text-white text-sm font-medium px-2 py-1 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            + Person
+          </button>
+          <div className="w-px h-4 bg-white/20 mx-1" />
+          <button
+            onClick={logout}
+            className="text-white/70 hover:text-white text-sm font-medium px-2 py-1"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </header>
 
-      {/* Search & Actions Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-[68px] z-30">
-        <div className="max-w-4xl mx-auto flex gap-3">
-          {/* Search Input (40%) */}
-          <div className="relative w-[40%]">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-2 py-2.5 rounded-xl border-2 border-gray-200 focus:border-nc-green focus:outline-none transition-colors text-sm"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    {/* Search & Actions Bar */}
+    <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-[68px] z-30">
+      <div className="max-w-4xl mx-auto flex gap-3">
+        {/* Search Input (40%) */}
+        <div className="relative w-[40%]">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-2 py-2.5 rounded-xl border-2 border-gray-200 focus:border-nc-green focus:outline-none transition-colors text-sm"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Action Buttons (Remaining space) */}
+        <div className="flex-1 flex gap-2">
+          {/* Copy Numbers Button */}
+          <button
+            onClick={handleCopyNumbers}
+            disabled={actionDisabled || copyLoading}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm ${copied
+              ? 'bg-green-600 text-white'
+              : 'bg-nc-rose text-white hover:opacity-90'
+              } ${actionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {copied ? (
+              <>
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-              </button>
+                <span className="truncate">Copied!</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                <span className="truncate">Copy #s ({textablePeople.length})</span>
+              </>
             )}
-          </div>
+          </button>
 
-          {/* Action Buttons (Remaining space) */}
-          <div className="flex-1 flex gap-2">
-            {/* Copy Numbers Button */}
-            <button
-              onClick={handleCopyNumbers}
-              disabled={actionDisabled || copyLoading}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm ${copied
-                ? 'bg-green-600 text-white'
-                : 'bg-nc-rose text-white hover:opacity-90'
-                } ${actionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {copied ? (
-                <>
-                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="truncate">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                  </svg>
-                  <span className="truncate">Copy #s ({textablePeople.length})</span>
-                </>
-              )}
-            </button>
-
-            {/* Text Blast Button */}
-            <button
-              onClick={() => setShowTextBlast(true)}
-              disabled={actionDisabled}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all ${actionDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-nc-blue hover:opacity-90'
-                }`}
-            >
-              <span className="truncate">Mass Text</span>
-            </button>
-          </div>
+          {/* Text Blast Button */}
+          <button
+            onClick={() => setShowTextBlast(true)}
+            disabled={actionDisabled}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all ${actionDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-nc-blue hover:opacity-90'
+              }`}
+          >
+            <span className="truncate">Mass Text</span>
+          </button>
         </div>
       </div>
-
-      {/* Filter Bar */}
-      <FilterBar
-        groups={groups}
-        selectedGroups={selectedGroups}
-        setSelectedGroups={setSelectedGroups}
-        selectedAgeGroup={selectedAgeGroup}
-        setSelectedAgeGroup={setSelectedAgeGroup}
-        selectedGender={selectedGender}
-        setSelectedGender={setSelectedGender}
-        clearFilters={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-      />
-
-      {/* Results Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display font-semibold text-nc-ink">
-                {filterDescription}
-              </h2>
-              <p className="text-sm text-gray-500">
-                {filteredPeople.length} {filteredPeople.length === 1 ? 'person' : 'people'}
-                {textablePeople.length !== filteredPeople.length && (
-                  <span className="text-nc-green"> · {textablePeople.length} with phone</span>
-                )}
-              </p>
-            </div>
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="text-nc-rose text-sm font-medium hover:underline"
-              >
-                Clear All
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sort:</span>
-            <button
-              onClick={() => setSortBy('firstName')}
-              className={`filter-pill shrink-0 ${sortBy === 'firstName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
-            >
-              First Name
-            </button>
-            <button
-              onClick={() => setSortBy('lastName')}
-              className={`filter-pill shrink-0 ${sortBy === 'lastName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
-            >
-              Last Name
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* People List */}
-      <main className="flex-1 overflow-auto pb-32">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-nc-green border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="max-w-4xl mx-auto px-4">
-            <PersonList people={sortedPeople} onPersonClick={setEditingPerson} />
-          </div>
-        )}
-      </main>
-
-
-
-      {/* Text Blast Modal */}
-      {showTextBlast && (
-        <TextBlastModal
-          filters={{
-            groupIds: selectedGroups,
-            gender: selectedGender,
-            ageGroup: selectedAgeGroup
-          }}
-          filterDescription={filterDescription}
-          recipientCount={textablePeople.length}
-          onClose={() => setShowTextBlast(false)}
-        />
-      )}
-
-      {/* Add Person Modal */}
-      {showAddPerson && (
-        <AddPersonModal
-          groups={groups}
-          onClose={() => setShowAddPerson(false)}
-          onAdd={handleAddPerson}
-        />
-      )}
-
-      {/* Add Group Modal */}
-      {showAddGroup && (
-        <AddGroupModal
-          onClose={() => setShowAddGroup(false)}
-          onAdd={handleAddGroup}
-        />
-      )}
-
-      {/* Edit Person Modal */}
-      {editingPerson && (
-        <EditPersonModal
-          person={editingPerson}
-          groups={groups}
-          onClose={() => setEditingPerson(null)}
-          onSave={() => {
-            setEditingPerson(null)
-            loadData()
-          }}
-        />
-      )}
     </div>
-  )
+
+    {/* Filter Bar */}
+    <FilterBar
+      groups={groups}
+      selectedGroups={selectedGroups}
+      setSelectedGroups={setSelectedGroups}
+      selectedAgeGroup={selectedAgeGroup}
+      setSelectedAgeGroup={setSelectedAgeGroup}
+      selectedGender={selectedGender}
+      setSelectedGender={setSelectedGender}
+      clearFilters={clearFilters}
+      hasActiveFilters={hasActiveFilters}
+    />
+
+    {/* Results Header */}
+    <div className="bg-white border-b border-gray-200 px-4 py-3">
+      <div className="max-w-4xl mx-auto flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-display font-semibold text-nc-ink">
+              {filterDescription}
+            </h2>
+            <p className="text-sm text-gray-500">
+              {filteredPeople.length} {filteredPeople.length === 1 ? 'person' : 'people'}
+              {textablePeople.length !== filteredPeople.length && (
+                <span className="text-nc-green"> · {textablePeople.length} with phone</span>
+              )}
+            </p>
+          </div>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="text-nc-rose text-sm font-medium hover:underline"
+            >
+              Clear All
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sort:</span>
+          <button
+            onClick={() => setSortBy('firstName')}
+            className={`filter-pill shrink-0 ${sortBy === 'firstName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+          >
+            First Name
+          </button>
+          <button
+            onClick={() => setSortBy('lastName')}
+            className={`filter-pill shrink-0 ${sortBy === 'lastName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+          >
+            Last Name
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* People List */}
+    <main className="flex-1 overflow-auto pb-32">
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-4 border-nc-green border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="max-w-4xl mx-auto px-4">
+          <PersonList people={sortedPeople} onPersonClick={setEditingPerson} />
+        </div>
+      )}
+    </main>
+
+
+
+    {/* Text Blast Modal */}
+    {showTextBlast && (
+      <TextBlastModal
+        filters={{
+          groupIds: selectedGroups,
+          gender: selectedGender,
+          ageGroup: selectedAgeGroup
+        }}
+        filterDescription={filterDescription}
+        recipientCount={textablePeople.length}
+        onClose={() => setShowTextBlast(false)}
+      />
+    )}
+
+    {/* Add Person Modal */}
+    {showAddPerson && (
+      <AddPersonModal
+        groups={groups}
+        onClose={() => setShowAddPerson(false)}
+        onAdd={handleAddPerson}
+      />
+    )}
+
+    {/* Add Group Modal */}
+    {showAddGroup && (
+      <AddGroupModal
+        onClose={() => setShowAddGroup(false)}
+        onAdd={handleAddGroup}
+      />
+    )}
+
+    {/* Edit Person Modal */}
+    {editingPerson && (
+      <EditPersonModal
+        person={editingPerson}
+        groups={groups}
+        onClose={() => setEditingPerson(null)}
+        onSave={() => {
+          setEditingPerson(null)
+          loadData()
+        }}
+      />
+    )}
+  </div>
+)
 }
