@@ -149,7 +149,8 @@ export default function Dashboard() {
     } else if (selectedGender) {
       parts.push(`All ${selectedGender === 'Male' ? 'Males' : 'Females'}`)
     } else {
-      parts.push('Everyone')
+      // Only say "Everyone" if there are no other specific filters starting the sentence
+      // We'll handle "Everyone" fallback at the end if parts is still empty
     }
 
     if (selectedGroups.length > 0) {
@@ -161,8 +162,18 @@ export default function Dashboard() {
       }
     }
 
+    // Add search term if present
+    if (search) {
+      parts.push(`matching "${search}"`)
+    }
+
+    // Fallback to "Everyone" only if parts turned out empty
+    if (parts.length === 0) {
+      return 'Everyone'
+    }
+
     return parts.join(' ')
-  }, [selectedAgeGroup, selectedGender, selectedGroups, groups])
+  }, [selectedAgeGroup, selectedGender, selectedGroups, groups, search])
 
   // Clear all filters
   const clearFilters = () => {
