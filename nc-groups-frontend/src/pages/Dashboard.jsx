@@ -207,7 +207,9 @@ export default function Dashboard() {
             <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
               <span className="font-display font-bold text-base">nc</span>
             </div>
-            <h1 className="font-display font-bold text-base">NC Groups</h1>
+            <h1 className="font-display font-bold text-base">
+              NC Groups <span className="text-xs font-normal opacity-70 ml-1">v3</span>
+            </h1>
           </div>
           <div className="flex items-center gap-2">
             <button
