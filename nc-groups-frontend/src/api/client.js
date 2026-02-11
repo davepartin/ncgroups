@@ -82,6 +82,12 @@ export const createPerson = async (personData) => {
   })
 }
 
+export const deletePerson = async (id) => {
+  return apiRequest(`/api/people/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 // Groups
 export const getGroups = async () => {
   const data = await apiRequest('/api/groups')

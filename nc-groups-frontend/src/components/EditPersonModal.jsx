@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://ncgroups-api-production.up.railway.app'
 
-export default function EditPersonModal({ person, groups, onClose, onSave }) {
+export default function EditPersonModal({ person, groups, onClose, onSave, onDelete }) {
   const [firstName, setFirstName] = useState(person.firstName || '')
   const [lastName, setLastName] = useState(person.lastName || '')
   const [phone, setPhone] = useState(person.phone || '')
@@ -78,6 +78,19 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
         ? prev.filter(id => id !== groupId)
         : [...prev, groupId]
     )
+  }
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this person? This cannot be undone.')) {
+      setSaving(true)
+      try {
+        await onDelete(person.id)
+        onClose()
+      } catch (err) {
+        setError('Failed to delete person')
+        setSaving(false)
+      }
+    }
   }
 
   return (
@@ -259,31 +272,41 @@ export default function EditPersonModal({ person, groups, onClose, onSave }) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
+        <div className="p-4 border-t border-gray-200 flex items-center justify-between">
           <button
-            onClick={onClose}
+            onClick={handleDelete}
             disabled={saving}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium disabled:opacity-50"
+            className="text-nc-rose text-sm font-medium hover:underline disabled:opacity-50"
           >
-            Cancel
+            Delete Person
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-nc-green text-white rounded-lg hover:bg-opacity-90 font-medium disabled:opacity-50 flex items-center gap-2"
-          >
-            {saving ? (
-              <>
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Saving...
-              </>
-            ) : (
-              'Save Changes'
-            )}
-          </button>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={saving}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-4 py-2 bg-nc-green text-white rounded-lg hover:bg-opacity-90 font-medium disabled:opacity-50 flex items-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getPeople, getGroups, createPerson, createGroup, deleteGroup, logout, getFilteredPhones } from '../api/client'
+import { getPeople, getGroups, createPerson, createGroup, deleteGroup, deletePerson, logout, getFilteredPhones } from '../api/client'
 import FilterBar from '../components/FilterBar'
 import PersonList from '../components/PersonList'
 import TextBlastModal from '../components/TextBlastModal'
@@ -83,6 +83,17 @@ export default function Dashboard() {
       loadData()
     } catch (err) {
       alert('Failed to delete group')
+    }
+  }
+
+  const handleDeletePerson = async (personId) => {
+    try {
+      await deletePerson(personId)
+      // Remove person from local state
+      setPeople(prev => prev.filter(p => p.id !== personId))
+      setEditingPerson(null)
+    } catch (err) {
+      alert('Failed to delete person')
     }
   }
 
@@ -458,6 +469,7 @@ export default function Dashboard() {
             person={editingPerson}
             groups={groups}
             onClose={() => setEditingPerson(null)}
+            onDelete={handleDeletePerson}
             onSave={async (updatedPerson) => {
               // Update the person in the local state
               setPeople(prevPeople =>
