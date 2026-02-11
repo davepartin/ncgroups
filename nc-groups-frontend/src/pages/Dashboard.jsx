@@ -207,7 +207,10 @@ export default function Dashboard() {
   }
 
   const hasActiveFilters = selectedGroups.length > 0 || selectedAgeGroup || selectedGender || selectedMembershipStatus || search
+
+  // Disable actions if no people found OR (for Mass Text safety) if no filters are active at all
   const actionDisabled = textablePeople.length === 0
+  const massTextDisabled = actionDisabled || !hasActiveFilters
 
   return (
     <div className="min-h-screen bg-nc-light flex flex-col">
@@ -314,11 +317,13 @@ export default function Dashboard() {
             {/* Text Blast Button */}
             <button
               onClick={() => setShowTextBlast(true)}
-              disabled={actionDisabled}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all ${actionDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-nc-blue hover:opacity-90'
+              disabled={massTextDisabled}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all ${massTextDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-nc-blue hover:opacity-90'
                 }`}
             >
-              <span className="truncate">Mass Text</span>
+              <span className="truncate">
+                {!hasActiveFilters ? 'Select People First' : 'Mass Text'}
+              </span>
             </button>
           </div>
         </div>
@@ -379,85 +384,97 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
-      </div>
+      </div >
 
       {/* People List */}
       <main className="flex-1 overflow-auto pb-32">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-nc-green border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="max-w-4xl mx-auto px-4">
-            <PersonList people={sortedPeople} onPersonClick={setEditingPerson} />
-          </div>
-        )}
-      </main>
+        {
+          loading ? (
+            <div className="flex items-center justify-center py-12" >
+              <div className="w-8 h-8 border-4 border-nc-green border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="max-w-4xl mx-auto px-4">
+              <PersonList people={sortedPeople} onPersonClick={setEditingPerson} />
+            </div>
+          )
+        }
+      </main >
 
 
 
       {/* Text Blast Modal */}
-      {showTextBlast && (
-        <TextBlastModal
-          recipients={textablePeople} // Pass explicit list of recipients
-          filters={{
-            groupIds: selectedGroups,
-            gender: selectedGender,
-            ageGroup: selectedAgeGroup
-          }}
-          filterDescription={filterDescription}
-          recipientCount={textablePeople.length}
-          onClose={() => setShowTextBlast(false)}
-        />
-      )}
+      {
+        showTextBlast && (
+          <TextBlastModal
+            recipients={textablePeople} // Pass explicit list of recipients
+            filters={{
+              groupIds: selectedGroups,
+              gender: selectedGender,
+              ageGroup: selectedAgeGroup
+            }}
+            filterDescription={filterDescription}
+            recipientCount={textablePeople.length}
+            onClose={() => setShowTextBlast(false)}
+          />
+        )
+      }
 
       {/* Add Person Modal */}
-      {showAddPerson && (
-        <AddPersonModal
-          groups={groups}
-          onClose={() => setShowAddPerson(false)}
-          onAdd={handleAddPerson}
-        />
-      )}
+      {
+        showAddPerson && (
+          <AddPersonModal
+            groups={groups}
+            onClose={() => setShowAddPerson(false)}
+            onAdd={handleAddPerson}
+          />
+        )
+      }
 
       {/* Add Group Modal */}
-      {showAddGroup && (
-        <AddGroupModal
-          onClose={() => setShowAddGroup(false)}
-          onAdd={handleAddGroup}
-        />
-      )}
+      {
+        showAddGroup && (
+          <AddGroupModal
+            onClose={() => setShowAddGroup(false)}
+            onAdd={handleAddGroup}
+          />
+        )
+      }
 
       {/* Manage Groups Modal */}
-      {showManageGroups && (
-        <ManageGroupsModal
-          groups={groups}
-          onClose={() => setShowManageGroups(false)}
-          onDelete={handleDeleteGroup}
-        />
-      )}
+      {
+        showManageGroups && (
+          <ManageGroupsModal
+            groups={groups}
+            onClose={() => setShowManageGroups(false)}
+            onDelete={handleDeleteGroup}
+          />
+        )
+      }
 
-      {editingPerson && (
-        <EditPersonModal
-          person={editingPerson}
-          groups={groups}
-          onClose={() => setEditingPerson(null)}
-          onSave={async (updatedPerson) => {
-            // Update the person in the local state
-            setPeople(prevPeople =>
-              prevPeople.map(p => p.id === updatedPerson.id ? updatedPerson : p)
-            )
-            setEditingPerson(null)
-            // Reload groups to update member counts
-            try {
-              const groupsRes = await getGroups()
-              setGroups(groupsRes.groups)
-            } catch (err) {
-              console.error('Failed to reload groups:', err)
-            }
-          }}
-        />
-      )}
-    </div>
+      {
+        editingPerson && (
+          <EditPersonModal
+            person={editingPerson}
+            groups={groups}
+            onClose={() => setEditingPerson(null)}
+            onSave={async (updatedPerson) => {
+              // Update the person in the local state
+              setPeople(prevPeople =>
+                prevPeople.map(p => p.id === updatedPerson.id ? updatedPerson : p)
+              )
+              setEditingPerson(null)
+              // Reload groups to update member counts
+              try {
+                const groupsRes = await getGroups()
+                setGroups(groupsRes.groups)
+              } catch (err) {
+                console.error('Failed to reload groups:', err)
+              }
+            }}
+          />
+        )
+      }
+    </div >
   )
 }
