@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://ncgroups-api-production.up.railway.app'
 
-export default function TextBlastModal({ filters, filterDescription, recipientCount, onClose }) {
+export default function TextBlastModal({ recipients, filters, filterDescription, recipientCount, onClose }) {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
@@ -20,6 +20,10 @@ export default function TextBlastModal({ filters, filterDescription, recipientCo
     try {
       const token = localStorage.getItem('ncgroups_token')
 
+      // Extract IDs from the recipients list (WYSIWYG)
+      // This ensures we only email exactly who is filtered on screen
+      const recipientIds = recipients.map(r => r.id)
+
       const response = await fetch(`${API_BASE}/api/text-blast/send`, {
         method: 'POST',
         headers: {
@@ -28,7 +32,10 @@ export default function TextBlastModal({ filters, filterDescription, recipientCo
         },
         body: JSON.stringify({
           message: message.trim(),
-          groupId: filters.groupIds?.[0], // Use first selected group
+          recipientIds, // Explicit list of IDs
+          // Pass filters just for logging/context if needed by backend, 
+          // but backend will prioritize recipientIds
+          groupIds: filters.groupIds,
           gender: filters.gender,
           ageGroup: filters.ageGroup
         })
@@ -73,8 +80,8 @@ export default function TextBlastModal({ filters, filterDescription, recipientCo
           <>
             <textarea
               className={`w-full h-32 p-3 border-2 rounded-lg mb-2 focus:outline-none transition-colors ${isOverLimit
-                  ? 'border-nc-rose focus:border-nc-rose'
-                  : 'border-gray-200 focus:border-nc-green'
+                ? 'border-nc-rose focus:border-nc-rose'
+                : 'border-gray-200 focus:border-nc-green'
                 }`}
               placeholder="Type your message here..."
               value={message}

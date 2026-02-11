@@ -386,6 +386,7 @@ export default function Dashboard() {
       {/* Text Blast Modal */}
       {showTextBlast && (
         <TextBlastModal
+          recipients={textablePeople} // Pass explicit list of recipients
           filters={{
             groupIds: selectedGroups,
             gender: selectedGender,

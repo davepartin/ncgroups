@@ -26,24 +26,44 @@ const OPT_OUT_FOOTER = '\n\nReply STOP to opt out';
  * Helper: Get eligible recipients based on filters
  * Returns people who have phone numbers and are NOT opted out
  */
-async function getEligibleRecipients({ groupId, gender, ageGroup }) {
+async function getEligibleRecipients({ recipientIds, groupIds, gender, ageGroup }) {
+  // SAFETY CHECK: Prevent accidental "send to everyone"
+  // If no specific IDs and no filters are provided, do NOT return all users.
+  if ((!recipientIds || recipientIds.length === 0) &&
+    (!groupIds || groupIds.length === 0) &&
+    !gender &&
+    !ageGroup) {
+    throw new Error('SAFETY CHECK: No recipients or filters specified. Cannot send to "everyone" implicitly.');
+  }
+
   const where = {
     phone: { not: null },
     isOptedOut: false
   };
 
-  if (groupId) {
-    where.groups = {
-      some: { groupId }
-    };
+  // PRIORITY 1: Explicit list of recipients (WYSIWYG from frontend)
+  if (recipientIds && recipientIds.length > 0) {
+    where.id = { in: recipientIds };
+    // We ignore other filters if specific IDs are provided, ensuring exact match with UI
   }
+  // PRIORITY 2: Filter-based selection (Fallback)
+  else {
+    if (groupIds && groupIds.length > 0) {
+      // Support multiple groups (OR logic: in group A OR group B)
+      where.groups = {
+        some: {
+          groupId: { in: groupIds }
+        }
+      };
+    }
 
-  if (gender) {
-    where.gender = gender;
-  }
+    if (gender) {
+      where.gender = gender;
+    }
 
-  if (ageGroup) {
-    where.ageGroup = ageGroup;
+    if (ageGroup) {
+      where.ageGroup = ageGroup;
+    }
   }
 
   const people = await prisma.person.findMany({
@@ -84,9 +104,9 @@ async function sendSingleSMS(to, message) {
  */
 router.post('/preview', async (req, res) => {
   try {
-    const { groupId, gender, ageGroup } = req.body;
+    const { recipientIds, groupIds, gender, ageGroup } = req.body;
 
-    const recipients = await getEligibleRecipients({ groupId, gender, ageGroup });
+    const recipients = await getEligibleRecipients({ recipientIds, groupIds, gender, ageGroup });
 
     // Calculate estimated cost ($0.01 per message for Twilio)
     const estimatedCost = (recipients.length * 0.01).toFixed(2);
@@ -116,7 +136,7 @@ router.post('/preview', async (req, res) => {
  */
 router.post('/send', async (req, res) => {
   try {
-    const { message, groupId, gender, ageGroup } = req.body;
+    const { message, recipientIds, groupIds, gender, ageGroup } = req.body;
 
     // Validate Twilio configuration
     if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
@@ -137,7 +157,7 @@ router.post('/send', async (req, res) => {
     }
 
     // Get recipients
-    const recipients = await getEligibleRecipients({ groupId, gender, ageGroup });
+    const recipients = await getEligibleRecipients({ recipientIds, groupIds, gender, ageGroup });
 
     if (recipients.length === 0) {
       return res.status(400).json({ error: 'No eligible recipients found' });
@@ -192,9 +212,12 @@ router.post('/send', async (req, res) => {
  */
 router.get('/sms-uri', async (req, res) => {
   try {
-    const { groupId, gender, ageGroup } = req.query;
+    const { groupId, groupIds, gender, ageGroup } = req.query;
+    // Handle both single groupId (legacy) and groupIds array
+    const effectiveGroupIds = groupIds ? (Array.isArray(groupIds) ? groupIds : [groupIds]) : (groupId ? [groupId] : []);
 
-    const recipients = await getEligibleRecipients({ groupId, gender, ageGroup });
+    // Note: sms-uri likely doesn't support mass individual recipientIds easily via query params due to length limits
+    const recipients = await getEligibleRecipients({ groupIds: effectiveGroupIds, gender, ageGroup });
 
     if (recipients.length === 0) {
       return res.status(400).json({ error: 'No eligible recipients found' });
@@ -219,4 +242,5 @@ router.get('/sms-uri', async (req, res) => {
   }
 });
 
+export { getEligibleRecipients };
 export default router;
