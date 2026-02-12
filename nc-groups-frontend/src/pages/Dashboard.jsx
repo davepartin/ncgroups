@@ -26,6 +26,8 @@ export default function Dashboard() {
   // Action state
   const [copyLoading, setCopyLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [copyNamesLoading, setCopyNamesLoading] = useState(false)
+  const [namesCopied, setNamesCopied] = useState(false)
 
   // Modal state
   const [showTextBlast, setShowTextBlast] = useState(false)
@@ -217,6 +219,34 @@ export default function Dashboard() {
     }
   }
 
+  // Handle Copy Names
+  const handleCopyNames = async () => {
+    if (filteredPeople.length === 0) return
+
+    setCopyNamesLoading(true)
+    try {
+      // Create a sorted list based on LastName for export
+      const sortedForExport = [...filteredPeople].sort((a, b) => {
+        const A = (a.lastName || '').toLowerCase()
+        const B = (b.lastName || '').toLowerCase()
+        return A.localeCompare(B)
+      })
+
+      const names = sortedForExport.map(p => `${p.firstName} ${p.lastName}`)
+
+      // Copy to clipboard (newlines for Sheets/Docs support)
+      await navigator.clipboard.writeText(names.join('\n'))
+
+      // Show feedback
+      setNamesCopied(true)
+      setTimeout(() => setNamesCopied(false), 2000)
+    } catch (err) {
+      alert('Failed to copy names: ' + err.message)
+    } finally {
+      setCopyNamesLoading(false)
+    }
+  }
+
   const hasActiveFilters = selectedGroups.length > 0 || selectedAgeGroup || selectedGender || selectedMembershipStatus || search
 
   // Disable actions if no people found OR (for Mass Text safety) if no filters are active at all
@@ -392,6 +422,28 @@ export default function Dashboard() {
               className={`filter-pill shrink-0 ${sortBy === 'lastName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
             >
               Last Name
+            </button>
+            <div className="w-px h-4 bg-gray-300 mx-1" />
+            <button
+              onClick={handleCopyNames}
+              disabled={filteredPeople.length === 0 || copyNamesLoading}
+              className={`filter-pill shrink-0 flex items-center gap-1.5 ${namesCopied ? 'bg-green-600 text-white border-green-600' : 'bg-white border-gray-200 text-gray-600 hover:border-nc-green hover:text-nc-green'}`}
+            >
+              {namesCopied ? (
+                <>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                  Copy Names
+                </>
+              )}
             </button>
           </div>
         </div>
