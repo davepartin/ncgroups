@@ -84,16 +84,26 @@ async function getEligibleRecipients({ recipientIds, groupIds, gender, ageGroup 
 
 /**
  * Helper: Send SMS to a single recipient
+ * Includes a statusCallback URL so Twilio posts delivery results back to us,
+ * allowing us to catch error 21610 (opted out) and auto-clean the database.
  */
 async function sendSingleSMS(to, message) {
   // Format phone number with +1 if needed
   const formattedPhone = to.startsWith('+') ? to : `+1${to}`;
 
-  return twilioClient.messages.create({
+  const params = {
     body: message,
     from: TWILIO_PHONE_NUMBER,
     to: formattedPhone
-  });
+  };
+
+  // Attach a status callback so Twilio reports delivery failures back to our app.
+  // Set APP_URL in your Vercel environment variables (e.g. https://your-app.vercel.app).
+  if (process.env.APP_URL) {
+    params.statusCallback = `${process.env.APP_URL}/api/twilio/status-callback`;
+  }
+
+  return twilioClient.messages.create(params);
 }
 
 /**
