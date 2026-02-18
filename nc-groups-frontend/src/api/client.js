@@ -71,7 +71,7 @@ export const logout = () => {
 
 // People
 export const getPeople = async () => {
-  const data = await apiRequest('/api/people')
+  const data = await apiRequest('/api/people?optedOut=true')
   return { people: data.people || [] }
 }
 
