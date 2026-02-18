@@ -107,6 +107,13 @@ export const deleteGroup = async (id) => {
   })
 }
 
+export const updateGroup = async (id, groupData) => {
+  return apiRequest(`/api/groups/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(groupData),
+  })
+}
+
 // Text Blast
 export const sendTextBlast = async (message, filters) => {
   return apiRequest('/api/text-blast', {

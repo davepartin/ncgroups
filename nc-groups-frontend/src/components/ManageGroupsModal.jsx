@@ -1,10 +1,41 @@
 import { useState } from 'react'
 
-export default function ManageGroupsModal({ groups, onClose, onDelete }) {
+export default function ManageGroupsModal({ groups, onClose, onDelete, onUpdate }) {
     const [confirmDelete, setConfirmDelete] = useState(null) // group ID to confirm
+    const [editingGroup, setEditingGroup] = useState(null) // group being edited
+    const [editName, setEditName] = useState('')
+    const [saving, setSaving] = useState(false)
 
     const handleDeleteClick = (group) => {
         setConfirmDelete(group)
+        setEditingGroup(null)
+    }
+
+    const handleEditClick = (group) => {
+        setEditingGroup(group)
+        setEditName(group.name)
+        setConfirmDelete(null)
+    }
+
+    const handleCancelEdit = () => {
+        setEditingGroup(null)
+        setEditName('')
+    }
+
+    const handleSaveEdit = async () => {
+        if (!editName.trim() || !editingGroup) return
+
+        setSaving(true)
+        try {
+            await onUpdate(editingGroup.id, { name: editName.trim() })
+            setEditingGroup(null)
+            setEditName('')
+        } catch (error) {
+            console.error('Failed to update group:', error)
+            alert('Failed to update group')
+        } finally {
+            setSaving(false)
+        }
     }
 
     const handleConfirmDelete = () => {
@@ -61,19 +92,62 @@ export default function ManageGroupsModal({ groups, onClose, onDelete }) {
                         ) : (
                             groups.map(group => (
                                 <div key={group.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors">
-                                    <div>
-                                        <h3 className="font-medium text-gray-900">{group.name}</h3>
-                                        <p className="text-xs text-gray-500">{group.memberCount} members</p>
-                                    </div>
-                                    <button
-                                        onClick={() => handleDeleteClick(group)}
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Delete Group"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
+                                    {editingGroup?.id === group.id ? (
+                                        <div className="flex-1 flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                value={editName}
+                                                onChange={(e) => setEditName(e.target.value)}
+                                                className="flex-1 px-2 py-1 border-2 border-nc-green rounded focus:outline-none focus:border-nc-green"
+                                                autoFocus
+                                            />
+                                            <button
+                                                onClick={handleSaveEdit}
+                                                disabled={saving}
+                                                className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={handleCancelEdit}
+                                                disabled={saving}
+                                                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <h3 className="font-medium text-gray-900">{group.name}</h3>
+                                                <p className="text-xs text-gray-500">{group.memberCount} members</p>
+                                            </div>
+                                            <div className="flex items-center gap-2 opacity-100">
+                                                <button
+                                                    onClick={() => handleEditClick(group)}
+                                                    className="p-2 text-gray-400 hover:text-nc-blue hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Edit Group"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(group)}
+                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Delete Group"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             ))
                         )}

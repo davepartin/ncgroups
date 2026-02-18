@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getPeople, getGroups, createPerson, createGroup, deleteGroup, deletePerson, logout, getFilteredPhones } from '../api/client'
+import { getPeople, getGroups, createPerson, createGroup, deleteGroup, deletePerson, logout, getFilteredPhones, updateGroup } from '../api/client'
 import FilterBar from '../components/FilterBar'
 import PersonList from '../components/PersonList'
 import TextBlastModal from '../components/TextBlastModal'
@@ -88,6 +88,16 @@ export default function Dashboard() {
     }
   }
 
+  const handleUpdateGroup = async (groupId, groupData) => {
+    try {
+      await updateGroup(groupId, groupData)
+      loadData()
+    } catch (err) {
+      alert('Failed to update group')
+      throw err // Re-throw so modal knows it failed
+    }
+  }
+
   const handleDeletePerson = async (personId) => {
     try {
       await deletePerson(personId)
@@ -154,6 +164,18 @@ export default function Dashboard() {
   const filterDescription = useMemo(() => {
     const parts = []
 
+    // Membership Status
+    if (selectedMembershipStatus) {
+      if (selectedMembershipStatus === 'RegularAttender') {
+        parts.push('Regular Attenders')
+      } else if (selectedMembershipStatus === 'Youth') {
+        parts.push('Youth')
+      } else {
+        parts.push(`${selectedMembershipStatus}s`)
+      }
+    }
+
+    // Age / Gender
     if (selectedAgeGroup && selectedGender) {
       // Combined: "Adult Males", "Youth Females"
       parts.push(`${selectedAgeGroup} ${selectedGender === 'Male' ? 'Males' : 'Females'}`)
@@ -162,10 +184,13 @@ export default function Dashboard() {
     } else if (selectedGender) {
       parts.push(`All ${selectedGender === 'Male' ? 'Males' : 'Females'}`)
     } else {
-      // Only say "Everyone" if there are no other specific filters starting the sentence
-      // We'll handle "Everyone" fallback at the end if parts is still empty
+      // Only say "Everyone" if there are no other specific filters (and membership wasn't added)
+      if (parts.length === 0 && selectedGroups.length === 0 && !search) {
+        // We'll handle "Everyone" fallback at the end
+      }
     }
 
+    // Groups
     if (selectedGroups.length > 0) {
       if (selectedGroups.length === 1) {
         const group = groups.find(g => g.id === selectedGroups[0])
@@ -175,18 +200,18 @@ export default function Dashboard() {
       }
     }
 
-    // Add search term if present
+    // Search
     if (search) {
       parts.push(`matching "${search}"`)
     }
 
-    // Fallback to "Everyone" only if parts turned out empty
+    // Fallback
     if (parts.length === 0) {
       return 'Everyone'
     }
 
     return parts.join(' ')
-  }, [selectedAgeGroup, selectedGender, selectedGroups, groups, search])
+  }, [selectedAgeGroup, selectedGender, selectedGroups, groups, search, selectedMembershipStatus])
 
   // Clear all filters
   const clearFilters = () => {
@@ -247,6 +272,66 @@ export default function Dashboard() {
     }
   }
 
+  // Handle Export Data
+  const handleExportData = () => {
+    if (filteredPeople.length === 0) return
+
+    // helper to escape CSV fields
+    const escapeCsv = (str) => {
+      if (str === null || str === undefined) return ''
+      const stringValue = String(str)
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`
+      }
+      return stringValue
+    }
+
+    // Define CSV Headers
+    const headers = [
+      'First Name',
+      'Last Name',
+      'Phone',
+      'Email',
+      'Age Group',
+      'Gender',
+      'Membership Status',
+      'Opted Out',
+      'Groups'
+    ]
+
+    // Map people to CSV rows
+    const rows = filteredPeople.map(p => {
+      return [
+        p.firstName,
+        p.lastName,
+        p.phone,
+        p.email,
+        p.ageGroup,
+        p.gender,
+        p.membershipStatus,
+        p.isOptedOut ? 'Yes' : 'No',
+        p.groups ? p.groups.map(g => g.name).join('; ') : ''
+      ].map(escapeCsv).join(',')
+    })
+
+    // Combine headers and rows
+    const csvContent = [headers.join(','), ...rows].join('\n')
+
+    // Create a Blob and download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    // Format date for filename
+    const date = new Date().toISOString().split('T')[0]
+    link.setAttribute('href', url)
+    link.setAttribute('download', `nc-groups-export-${date}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const hasActiveFilters = selectedGroups.length > 0 || selectedAgeGroup || selectedGender || selectedMembershipStatus || search
 
   // Disable actions if no people found OR (for Mass Text safety) if no filters are active at all
@@ -263,7 +348,7 @@ export default function Dashboard() {
               <span className="font-display font-bold text-base">nc</span>
             </div>
             <h1 className="font-display font-bold text-base">
-              NC Groups <span className="text-xs font-normal opacity-70 ml-1">v3</span>
+              NC Groups <span className="text-xs font-normal opacity-70 ml-1">v4</span>
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -445,6 +530,16 @@ export default function Dashboard() {
                 </>
               )}
             </button>
+            <button
+              onClick={handleExportData}
+              disabled={filteredPeople.length === 0}
+              className="filter-pill shrink-0 flex items-center gap-1.5 bg-white border-gray-200 text-gray-600 hover:border-nc-green hover:text-nc-green disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export Data
+            </button>
           </div>
         </div>
       </div >
@@ -511,6 +606,7 @@ export default function Dashboard() {
             groups={groups}
             onClose={() => setShowManageGroups(false)}
             onDelete={handleDeleteGroup}
+            onUpdate={handleUpdateGroup}
           />
         )
       }
