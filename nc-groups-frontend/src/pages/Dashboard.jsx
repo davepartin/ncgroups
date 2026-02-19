@@ -116,7 +116,10 @@ export default function Dashboard() {
       if (search) {
         const searchLower = search.toLowerCase()
         const fullName = `${person.firstName} ${person.lastName}`.toLowerCase()
-        if (!fullName.includes(searchLower)) return false
+        const phoneDigits = search.replace(/\D/g, '')
+        const matchesName = fullName.includes(searchLower)
+        const matchesPhone = phoneDigits.length > 0 && person.phone?.includes(phoneDigits)
+        if (!matchesName && !matchesPhone) return false
       }
 
       // Group filter (OR logic)
