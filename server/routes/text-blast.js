@@ -252,5 +252,75 @@ router.get('/sms-uri', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/text-blast/send-to-numbers
+ * Body: { message, phones: string[] }
+ *
+ * Sends a text blast to a raw list of phone numbers (bypasses contacts DB).
+ * Useful for pasting numbers directly from a Google Form or other source.
+ */
+router.post('/send-to-numbers', async (req, res) => {
+  try {
+    const { message, phones } = req.body;
+
+    // Validate Twilio configuration
+    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+      return res.status(500).json({ error: 'SMS service not configured' });
+    }
+
+    if (!message || message.trim().length === 0) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    if (!phones || !Array.isArray(phones) || phones.length === 0) {
+      return res.status(400).json({ error: 'At least one phone number is required' });
+    }
+
+    // Clean, validate, and deduplicate phone numbers
+    const cleanedPhones = [...new Set(
+      phones
+        .map(p => String(p).replace(/\D/g, ''))       // strip non-digits
+        .map(p => p.length === 11 && p.startsWith('1') ? p.slice(1) : p) // strip leading 1
+        .filter(p => p.length === 10)                  // only valid 10-digit numbers
+    )];
+
+    if (cleanedPhones.length === 0) {
+      return res.status(400).json({ error: 'No valid 10-digit phone numbers found' });
+    }
+
+    const fullMessage = message.trim() + OPT_OUT_FOOTER;
+
+    if (fullMessage.length > 1600) {
+      return res.status(400).json({ error: 'Message too long (max 1600 characters including opt-out text)' });
+    }
+
+    const results = { sent: [], failed: [] };
+
+    for (const phone of cleanedPhones) {
+      try {
+        await sendSingleSMS(phone, fullMessage);
+        results.sent.push(phone);
+      } catch (error) {
+        console.error(`Failed to send to ${phone}:`, error.message);
+        results.failed.push({ phone, error: error.message });
+      }
+    }
+
+    const cost = (results.sent.length * 0.01).toFixed(2);
+
+    res.json({
+      success: true,
+      message: `Text blast sent to ${results.sent.length} numbers`,
+      sentCount: results.sent.length,
+      failedCount: results.failed.length,
+      cost: `$${cost}`,
+      failed: results.failed.length > 0 ? results.failed : undefined
+    });
+  } catch (error) {
+    console.error('Error sending to numbers:', error);
+    res.status(500).json({ error: 'Failed to send text blast' });
+  }
+});
+
 export { getEligibleRecipients };
 export default router;
