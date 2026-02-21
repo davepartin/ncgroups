@@ -20,7 +20,7 @@ export default function Dashboard() {
   const [selectedGroups, setSelectedGroups] = useState([]) // Array of group IDs
   const [selectedAgeGroup, setSelectedAgeGroup] = useState(null) // Adult, Youth, Child
   const [selectedGender, setSelectedGender] = useState(null) // Male, Female
-  const [selectedMembershipStatus, setSelectedMembershipStatus] = useState(null) // Member, RegularAttender, Youth, Other
+  const [selectedMembershipStatus, setSelectedMembershipStatus] = useState([]) // Array of Member, RegularAttender, Youth, Other
 
   // Sort: 'firstName' | 'lastName'
   const [sortBy, setSortBy] = useState('lastName')
@@ -151,9 +151,11 @@ export default function Dashboard() {
         return false
       }
 
-      // Membership status filter
-      if (selectedMembershipStatus && person.membershipStatus !== selectedMembershipStatus) {
-        return false
+      // Membership status filter (Array check)
+      if (selectedMembershipStatus.length > 0) {
+        if (!selectedMembershipStatus.includes(person.membershipStatus)) {
+          return false
+        }
       }
 
       return true
@@ -180,13 +182,14 @@ export default function Dashboard() {
     const parts = []
 
     // Membership Status
-    if (selectedMembershipStatus) {
-      if (selectedMembershipStatus === 'RegularAttender') {
-        parts.push('Regular Attenders')
-      } else if (selectedMembershipStatus === 'Youth') {
-        parts.push('Youth')
+    if (selectedMembershipStatus.length > 0) {
+      if (selectedMembershipStatus.length === 1) {
+        const s = selectedMembershipStatus[0]
+        if (s === 'RegularAttender') parts.push('Regular Attenders')
+        else if (s === 'Youth') parts.push('Youth')
+        else parts.push(`${s}s`)
       } else {
-        parts.push(`${selectedMembershipStatus}s`)
+        parts.push(`${selectedMembershipStatus.length} Statuses`)
       }
     }
 
@@ -233,7 +236,7 @@ export default function Dashboard() {
     setSelectedGroups([])
     setSelectedAgeGroup(null)
     setSelectedGender(null)
-    setSelectedMembershipStatus(null)
+    setSelectedMembershipStatus([])
     setSearch('')
   }
 
@@ -350,7 +353,7 @@ export default function Dashboard() {
     showToast('Data exported successfully!')
   }
 
-  const hasActiveFilters = selectedGroups.length > 0 || selectedAgeGroup || selectedGender || selectedMembershipStatus || search
+  const hasActiveFilters = selectedGroups.length > 0 || selectedAgeGroup || selectedGender || selectedMembershipStatus.length > 0 || search
 
   // Disable actions if no people found OR (for Mass Text safety) if no filters are active at all
   const actionDisabled = textablePeople.length === 0

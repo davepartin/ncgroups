@@ -81,32 +81,56 @@ export default function FilterBar({
         <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Status:</span>
           <button
-            onClick={() => setSelectedMembershipStatus(null)}
-            className={`filter-pill shrink-0 ${selectedMembershipStatus === null ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            onClick={() => setSelectedMembershipStatus([])}
+            className={`filter-pill shrink-0 ${selectedMembershipStatus.length === 0 ? 'filter-pill-active' : 'filter-pill-inactive'}`}
           >
             All
           </button>
           <button
-            onClick={() => setSelectedMembershipStatus('Member')}
-            className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Member' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            onClick={() => {
+              if (selectedMembershipStatus.includes('Member')) {
+                setSelectedMembershipStatus(selectedMembershipStatus.filter(s => s !== 'Member'))
+              } else {
+                setSelectedMembershipStatus([...selectedMembershipStatus, 'Member'])
+              }
+            }}
+            className={`filter-pill shrink-0 ${selectedMembershipStatus.includes('Member') ? 'filter-pill-active' : 'filter-pill-inactive'}`}
           >
             Mem
           </button>
           <button
-            onClick={() => setSelectedMembershipStatus('RegularAttender')}
-            className={`filter-pill shrink-0 ${selectedMembershipStatus === 'RegularAttender' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            onClick={() => {
+              if (selectedMembershipStatus.includes('RegularAttender')) {
+                setSelectedMembershipStatus(selectedMembershipStatus.filter(s => s !== 'RegularAttender'))
+              } else {
+                setSelectedMembershipStatus([...selectedMembershipStatus, 'RegularAttender'])
+              }
+            }}
+            className={`filter-pill shrink-0 ${selectedMembershipStatus.includes('RegularAttender') ? 'filter-pill-active' : 'filter-pill-inactive'}`}
           >
             Reg Att
           </button>
           <button
-            onClick={() => setSelectedMembershipStatus('Youth')}
-            className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Youth' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            onClick={() => {
+              if (selectedMembershipStatus.includes('Youth')) {
+                setSelectedMembershipStatus(selectedMembershipStatus.filter(s => s !== 'Youth'))
+              } else {
+                setSelectedMembershipStatus([...selectedMembershipStatus, 'Youth'])
+              }
+            }}
+            className={`filter-pill shrink-0 ${selectedMembershipStatus.includes('Youth') ? 'filter-pill-active' : 'filter-pill-inactive'}`}
           >
             Youth
           </button>
           <button
-            onClick={() => setSelectedMembershipStatus('Other')}
-            className={`filter-pill shrink-0 ${selectedMembershipStatus === 'Other' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+            onClick={() => {
+              if (selectedMembershipStatus.includes('Other')) {
+                setSelectedMembershipStatus(selectedMembershipStatus.filter(s => s !== 'Other'))
+              } else {
+                setSelectedMembershipStatus([...selectedMembershipStatus, 'Other'])
+              }
+            }}
+            className={`filter-pill shrink-0 ${selectedMembershipStatus.includes('Other') ? 'filter-pill-active' : 'filter-pill-inactive'}`}
           >
             Other
           </button>
