@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import ConfirmDialog from './ConfirmDialog'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://ncgroups-api-production.up.railway.app'
 
@@ -16,6 +17,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
   const [isOptedOut, setIsOptedOut] = useState(person.isOptedOut || false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim()) {
@@ -81,15 +83,14 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
   }
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this person? This cannot be undone.')) {
-      setSaving(true)
-      try {
-        await onDelete(person.id)
-        onClose()
-      } catch (err) {
-        setError('Failed to delete person')
-        setSaving(false)
-      }
+    setSaving(true)
+    setShowDeleteConfirm(false)
+    try {
+      await onDelete(person.id)
+      onClose()
+    } catch (err) {
+      setError('Failed to delete person')
+      setSaving(false)
     }
   }
 
@@ -274,7 +275,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 flex items-center justify-between">
           <button
-            onClick={handleDelete}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={saving}
             className="text-nc-rose text-sm font-medium hover:underline disabled:opacity-50"
           >
@@ -309,6 +310,15 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Person"
+        message="Are you sure you want to delete this person? This cannot be undone."
+        confirmText="Delete Person"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   )
 }

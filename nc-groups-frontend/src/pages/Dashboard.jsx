@@ -8,6 +8,7 @@ import AddPersonModal from '../components/AddPersonModal'
 import AddGroupModal from '../components/AddGroupModal'
 import ManageGroupsModal from '../components/ManageGroupsModal'
 import EditPersonModal from '../components/EditPersonModal'
+import Toast from '../components/Toast'
 
 export default function Dashboard() {
   const [people, setPeople] = useState([])
@@ -38,6 +39,12 @@ export default function Dashboard() {
   const [showManageGroups, setShowManageGroups] = useState(false)
   const [editingPerson, setEditingPerson] = useState(null)
 
+  // Toast state
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' })
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type })
+  }
+
   // Load data on mount
   useEffect(() => {
     loadData()
@@ -63,8 +70,9 @@ export default function Dashboard() {
     try {
       await createPerson(personData)
       loadData()
+      showToast('Person added successfully!')
     } catch (err) {
-      alert('Failed to add person')
+      showToast('Failed to add person', 'error')
     }
   }
 
@@ -72,21 +80,22 @@ export default function Dashboard() {
     try {
       await createGroup(groupData)
       loadData()
+      showToast('Group added successfully!')
     } catch (err) {
-      alert('Failed to add group')
+      showToast('Failed to add group', 'error')
     }
   }
 
   const handleDeleteGroup = async (groupId) => {
     try {
       await deleteGroup(groupId)
-      // Check if deleted group was selected, if so, deselect it
       if (selectedGroups.includes(groupId)) {
         setSelectedGroups(selectedGroups.filter(id => id !== groupId))
       }
       loadData()
+      showToast('Group deleted', 'success')
     } catch (err) {
-      alert('Failed to delete group')
+      showToast('Failed to delete group', 'error')
     }
   }
 
@@ -94,20 +103,21 @@ export default function Dashboard() {
     try {
       await updateGroup(groupId, groupData)
       loadData()
+      showToast('Group updated successfully!')
     } catch (err) {
-      alert('Failed to update group')
-      throw err // Re-throw so modal knows it failed
+      showToast('Failed to update group', 'error')
+      throw err
     }
   }
 
   const handleDeletePerson = async (personId) => {
     try {
       await deletePerson(personId)
-      // Remove person from local state
       setPeople(prev => prev.filter(p => p.id !== personId))
       setEditingPerson(null)
+      showToast('Person deleted', 'success')
     } catch (err) {
-      alert('Failed to delete person')
+      showToast('Failed to delete person', 'error')
     }
   }
 
@@ -241,9 +251,10 @@ export default function Dashboard() {
 
       // Show feedback
       setCopied(true)
+      showToast('Numbers copied to clipboard')
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      alert('Failed to copy numbers: ' + err.message)
+      showToast('Failed to copy numbers', 'error')
     } finally {
       setCopyLoading(false)
     }
@@ -269,9 +280,10 @@ export default function Dashboard() {
 
       // Show feedback
       setNamesCopied(true)
+      showToast('Names copied to clipboard')
       setTimeout(() => setNamesCopied(false), 2000)
     } catch (err) {
-      alert('Failed to copy names: ' + err.message)
+      showToast('Failed to copy names', 'error')
     } finally {
       setCopyNamesLoading(false)
     }
@@ -335,6 +347,7 @@ export default function Dashboard() {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    showToast('Data exported successfully!')
   }
 
   const hasActiveFilters = selectedGroups.length > 0 || selectedAgeGroup || selectedGender || selectedMembershipStatus || search
@@ -392,9 +405,9 @@ export default function Dashboard() {
 
       {/* Search & Actions Bar */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-[52px] z-30">
-        <div className="max-w-4xl mx-auto flex gap-3">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row gap-3">
           {/* Search Input (40%) */}
-          <div className="relative w-[40%]">
+          <div className="relative w-full sm:w-[40%]">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -418,7 +431,7 @@ export default function Dashboard() {
           </div>
 
           {/* Action Buttons (Remaining space) */}
-          <div className="flex-1 flex gap-2">
+          <div className="flex-1 flex gap-2 w-full sm:w-auto">
             {/* Copy Numbers Button */}
             <button
               onClick={handleCopyNumbers}
@@ -510,68 +523,87 @@ export default function Dashboard() {
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sort:</span>
-            <button
-              onClick={() => setSortBy('firstName')}
-              className={`filter-pill shrink-0 ${sortBy === 'firstName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
-            >
-              First Name
-            </button>
-            <button
-              onClick={() => setSortBy('lastName')}
-              className={`filter-pill shrink-0 ${sortBy === 'lastName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
-            >
-              Last Name
-            </button>
-            <div className="w-px h-4 bg-gray-300 mx-1" />
-            <button
-              onClick={handleCopyNames}
-              disabled={filteredPeople.length === 0 || copyNamesLoading}
-              className={`filter-pill shrink-0 flex items-center gap-1.5 ${namesCopied ? 'bg-green-600 text-white border-green-600' : 'bg-white border-gray-200 text-gray-600 hover:border-nc-green hover:text-nc-green'}`}
-            >
-              {namesCopied ? (
-                <>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                  </svg>
-                  Copy Names
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleExportData}
-              disabled={filteredPeople.length === 0}
-              className="filter-pill shrink-0 flex items-center gap-1.5 bg-white border-gray-200 text-gray-600 hover:border-nc-green hover:text-nc-green disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Export Data
-            </button>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1 sm:mt-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sort:</span>
+              <button
+                onClick={() => setSortBy('firstName')}
+                className={`filter-pill shrink-0 ${sortBy === 'firstName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+              >
+                First Name
+              </button>
+              <button
+                onClick={() => setSortBy('lastName')}
+                className={`filter-pill shrink-0 ${sortBy === 'lastName' ? 'filter-pill-active' : 'filter-pill-inactive'}`}
+              >
+                Last Name
+              </button>
+            </div>
+
+            <div className="hidden sm:block w-px h-4 bg-gray-300 mx-1" />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleCopyNames}
+                disabled={filteredPeople.length === 0 || copyNamesLoading}
+                className={`filter-pill flex items-center gap-1.5 ${namesCopied ? 'bg-green-600 text-white border-green-600' : 'bg-white border-gray-200 text-gray-600 hover:border-nc-green hover:text-nc-green'}`}
+              >
+                {namesCopied ? (
+                  <>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    Copy Names
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleExportData}
+                disabled={filteredPeople.length === 0}
+                className="filter-pill flex items-center gap-1.5 bg-white border-gray-200 text-gray-600 hover:border-nc-green hover:text-nc-green disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export Data
+              </button>
+            </div>
           </div>
         </div>
-      </div >
+      </div>
 
       {/* People List */}
       <main className="flex-1 overflow-auto pb-32">
-        {
-          loading ? (
-            <div className="flex items-center justify-center py-12" >
-              <div className="w-8 h-8 border-4 border-nc-green border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : (
-            <div className="max-w-4xl mx-auto px-4">
-              <PersonList people={sortedPeople} onPersonClick={setEditingPerson} />
-            </div>
-          )
+        {loading ? (
+          <div className="max-w-4xl mx-auto px-4 py-2 space-y-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="animate-pulse bg-white p-3 flex items-center justify-between rounded-xl border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full shrink-0" />
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-32" />
+                    <div className="h-3 bg-gray-100 rounded w-48" />
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <div className="w-12 h-5 bg-gray-100 rounded-full" />
+                  <div className="w-12 h-5 bg-gray-100 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="max-w-4xl mx-auto px-4">
+            <PersonList people={sortedPeople} onPersonClick={setEditingPerson} />
+          </div>
+        )
         }
       </main >
 
@@ -656,6 +688,14 @@ export default function Dashboard() {
           />
         )
       }
+
+      {/* Global Toast Notification */}
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+      />
     </div >
   )
 }
