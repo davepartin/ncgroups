@@ -331,7 +331,7 @@ export default function Dashboard() {
             </div>
             <div>
               <h1 className="font-display font-bold text-base">
-                NC Groups <span className="text-xs font-normal opacity-70 ml-1">v5.1</span>
+                NC Groups <span className="text-xs font-normal opacity-70 ml-1">v5.2</span>
               </h1>
               <p className="text-[10px] text-white/70 leading-tight">
                 {syncStatus?.lastAppliedAt
