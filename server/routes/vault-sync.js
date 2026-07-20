@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { buildConsentSnapshot } from '../services/sms-consent.js';
 import { buildSyncPlan, payloadHash, validatePayload } from '../services/vault-sync.js';
 
 const router = Router();
@@ -41,6 +42,16 @@ async function preparePlan(input) {
   const plan = buildSyncPlan(payload, current.people, current.groups);
   return { payload, current, plan, hash: payloadHash(payload) };
 }
+
+router.get('/consent-snapshot', authenticateSyncToken, async (_req, res) => {
+  try {
+    const preferences = await prisma.smsPreference.findMany({ orderBy: { phone: 'asc' } });
+    res.json(buildConsentSnapshot(preferences));
+  } catch (error) {
+    console.error('Error fetching consent snapshot:', error);
+    res.status(500).json({ error: 'Failed to fetch consent snapshot' });
+  }
+});
 
 router.get('/status', authenticateToken, async (_req, res) => {
   try {
