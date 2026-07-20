@@ -1,18 +1,16 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getPeople, getGroups, createPerson, createGroup, deleteGroup, deletePerson, logout, getFilteredPhones, updateGroup } from '../api/client'
+import { getPeople, getGroups, getVaultSyncStatus, deletePerson, logout } from '../api/client'
 import FilterBar from '../components/FilterBar'
 import PersonList from '../components/PersonList'
 import TextBlastModal from '../components/TextBlastModal'
 import PasteBlastModal from '../components/PasteBlastModal'
-import AddPersonModal from '../components/AddPersonModal'
-import AddGroupModal from '../components/AddGroupModal'
-import ManageGroupsModal from '../components/ManageGroupsModal'
 import EditPersonModal from '../components/EditPersonModal'
 import Toast from '../components/Toast'
 
 export default function Dashboard() {
   const [people, setPeople] = useState([])
   const [groups, setGroups] = useState([])
+  const [syncStatus, setSyncStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
@@ -34,9 +32,6 @@ export default function Dashboard() {
   // Modal state
   const [showTextBlast, setShowTextBlast] = useState(false)
   const [showPasteBlast, setShowPasteBlast] = useState(false)
-  const [showAddPerson, setShowAddPerson] = useState(false)
-  const [showAddGroup, setShowAddGroup] = useState(false)
-  const [showManageGroups, setShowManageGroups] = useState(false)
   const [editingPerson, setEditingPerson] = useState(null)
 
   // Toast state
@@ -53,12 +48,14 @@ export default function Dashboard() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [peopleRes, groupsRes] = await Promise.all([
+      const [peopleRes, groupsRes, syncRes] = await Promise.all([
         getPeople(),
-        getGroups()
+        getGroups(),
+        getVaultSyncStatus().catch(() => null)
       ])
       setPeople(peopleRes.people)
       setGroups(groupsRes.groups)
+      setSyncStatus(syncRes)
     } catch (err) {
       console.error('Failed to load data:', err)
     } finally {
@@ -66,59 +63,11 @@ export default function Dashboard() {
     }
   }
 
-  const handleAddPerson = async (personData) => {
-    try {
-      await createPerson(personData)
-      loadData()
-      showToast('Person added successfully!')
-    } catch (err) {
-      showToast('Failed to add person', 'error')
-    }
-  }
-
-  const handleAddGroup = async (groupData) => {
-    try {
-      await createGroup(groupData)
-      loadData()
-      showToast('Group added successfully!')
-    } catch (err) {
-      showToast('Failed to add group', 'error')
-    }
-  }
-
-  const handleDeleteGroup = async (groupId) => {
-    try {
-      await deleteGroup(groupId)
-      if (selectedGroups.includes(groupId)) {
-        setSelectedGroups(selectedGroups.filter(id => id !== groupId))
-      }
-      loadData()
-      showToast('Group deleted', 'success')
-    } catch (err) {
-      showToast('Failed to delete group', 'error')
-    }
-  }
-
-  const handleUpdateGroup = async (groupId, groupData) => {
-    try {
-      await updateGroup(groupId, groupData)
-      loadData()
-      showToast('Group updated successfully!')
-    } catch (err) {
-      showToast('Failed to update group', 'error')
-      throw err
-    }
-  }
-
   const handleDeletePerson = async (personId) => {
-    try {
-      await deletePerson(personId)
-      setPeople(prev => prev.filter(p => p.id !== personId))
-      setEditingPerson(null)
-      showToast('Person deleted', 'success')
-    } catch (err) {
-      showToast('Failed to delete person', 'error')
-    }
+    await deletePerson(personId)
+    setPeople(previous => previous.filter(person => person.id !== personId))
+    setEditingPerson(null)
+    showToast('Person deleted')
   }
 
   // Filter people based on selections
@@ -153,7 +102,14 @@ export default function Dashboard() {
 
       // Membership status filter (Array check)
       if (selectedMembershipStatus.length > 0) {
-        if (!selectedMembershipStatus.includes(person.membershipStatus)) {
+        const membershipBucket = {
+          MemberChild: 'Member',
+          RegularAttenderChild: 'RegularAttender',
+          Visitor: 'Other',
+          VisitorChild: 'Other',
+          FourthCircle: 'Other'
+        }[person.membershipStatus] || person.membershipStatus
+        if (!selectedMembershipStatus.includes(membershipBucket)) {
           return false
         }
       }
@@ -174,7 +130,12 @@ export default function Dashboard() {
 
   // People with phone numbers (for texting)
   const textablePeople = useMemo(() => {
-    return filteredPeople.filter(p => p.phone && !p.isOptedOut)
+    const byPhone = new Map()
+    for (const person of filteredPeople) {
+      if (!person.phone || !['Legacy', 'OptedIn'].includes(person.smsConsentStatus) || byPhone.has(person.phone)) continue
+      byPhone.set(person.phone, person)
+    }
+    return [...byPhone.values()]
   }, [filteredPeople])
 
   // Build filter description
@@ -368,34 +329,18 @@ export default function Dashboard() {
             <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
               <span className="font-display font-bold text-base">nc</span>
             </div>
-            <h1 className="font-display font-bold text-base">
-              NC Groups <span className="text-xs font-normal opacity-70 ml-1">v4</span>
-            </h1>
+            <div>
+              <h1 className="font-display font-bold text-base">
+                NC Groups <span className="text-xs font-normal opacity-70 ml-1">v5</span>
+              </h1>
+              <p className="text-[10px] text-white/70 leading-tight">
+                {syncStatus?.lastAppliedAt
+                  ? `Vault synced ${new Date(syncStatus.lastAppliedAt).toLocaleString()}`
+                  : 'Vault sync not published yet'}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowAddGroup(true)}
-              className="text-white/90 hover:text-white text-sm font-medium px-2 py-1 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              + Group
-            </button>
-            <button
-              onClick={() => setShowManageGroups(true)}
-              className="text-white/70 hover:text-white text-xs px-2 py-1 hover:bg-white/10 rounded-lg transition-colors"
-              title="Manage Groups"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setShowAddPerson(true)}
-              className="text-white/90 hover:text-white text-sm font-medium px-2 py-1 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              + Person
-            </button>
-            <div className="w-px h-4 bg-white/20 mx-1" />
             <button
               onClick={logout}
               className="text-white/70 hover:text-white text-sm font-medium px-2 py-1"
@@ -513,7 +458,7 @@ export default function Dashboard() {
               <p className="text-sm text-gray-500">
                 {filteredPeople.length} {filteredPeople.length === 1 ? 'person' : 'people'}
                 {textablePeople.length !== filteredPeople.length && (
-                  <span className="text-nc-green"> · {textablePeople.length} with phone</span>
+                  <span className="text-nc-green"> · {textablePeople.length} textable numbers</span>
                 )}
               </p>
             </div>
@@ -630,39 +575,6 @@ export default function Dashboard() {
             filterDescription={filterDescription}
             recipientCount={textablePeople.length}
             onClose={() => setShowTextBlast(false)}
-          />
-        )
-      }
-
-      {/* Add Person Modal */}
-      {
-        showAddPerson && (
-          <AddPersonModal
-            groups={groups}
-            onClose={() => setShowAddPerson(false)}
-            onAdd={handleAddPerson}
-          />
-        )
-      }
-
-      {/* Add Group Modal */}
-      {
-        showAddGroup && (
-          <AddGroupModal
-            onClose={() => setShowAddGroup(false)}
-            onAdd={handleAddGroup}
-          />
-        )
-      }
-
-      {/* Manage Groups Modal */}
-      {
-        showManageGroups && (
-          <ManageGroupsModal
-            groups={groups}
-            onClose={() => setShowManageGroups(false)}
-            onDelete={handleDeleteGroup}
-            onUpdate={handleUpdateGroup}
           />
         )
       }

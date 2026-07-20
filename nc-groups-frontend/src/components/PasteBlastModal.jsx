@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://ncgroups-api-production.up.railway.app'
 
@@ -19,11 +19,46 @@ export default function PasteBlastModal({ onClose }) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
+  const [consentPreview, setConsentPreview] = useState(null)
 
   const phones = useMemo(() => parsePhones(rawNumbers), [rawNumbers])
   const charCount = message.length
   const isOverLimit = charCount > 1600
-  const canSend = phones.length > 0 && message.trim().length > 0 && !isOverLimit && !sending
+  const sendableCount = consentPreview?.sendableCount ?? phones.length
+  const canSend = sendableCount > 0 && message.trim().length > 0 && !isOverLimit && !sending
+
+  useEffect(() => {
+    if (phones.length === 0) {
+      setConsentPreview(null)
+      return
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('ncgroups_token')
+        const response = await fetch(`${API_BASE}/api/text-blast/preview-numbers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ phones })
+        })
+        const data = await response.json()
+        if (response.ok) setConsentPreview(data)
+      } catch {
+        setConsentPreview(null)
+      }
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [phones])
+
+  const handlePaste = (event) => {
+    const pasted = event.clipboardData.getData('text')
+    const cleaned = parsePhones(pasted)
+    if (cleaned.length === 0) return
+    event.preventDefault()
+    setRawNumbers(cleaned.join('\n'))
+  }
 
   const handleSend = async () => {
     if (!canSend) return
@@ -78,6 +113,9 @@ export default function PasteBlastModal({ onClose }) {
             {result.failedCount > 0 && (
               <p className="text-sm text-nc-rose mt-1">{result.failedCount} failed to send</p>
             )}
+            {result.blockedCount > 0 && (
+              <p className="text-sm text-amber-700 mt-1">{result.blockedCount} opted-out or unconfirmed number{result.blockedCount === 1 ? '' : 's'} skipped</p>
+            )}
             <button
               onClick={onClose}
               className="mt-4 px-4 py-2 bg-nc-green text-white rounded-lg font-medium hover:bg-opacity-90"
@@ -96,13 +134,19 @@ export default function PasteBlastModal({ onClose }) {
               placeholder="Paste numbers here — any format works&#10;9135551234, 9136665678, (913) 888-9012..."
               value={rawNumbers}
               onChange={e => setRawNumbers(e.target.value)}
+              onPaste={handlePaste}
               disabled={sending}
             />
             <p className={`text-sm mb-4 ${phones.length > 0 ? 'text-nc-green font-medium' : 'text-gray-400'}`}>
               {phones.length > 0
-                ? `✓ ${phones.length} valid number${phones.length === 1 ? '' : 's'} detected`
+                ? `✓ ${sendableCount} number${sendableCount === 1 ? '' : 's'} ready to text`
                 : 'No valid numbers yet'}
             </p>
+            {consentPreview?.blockedCount > 0 && (
+              <p className="text-sm text-amber-700 -mt-3 mb-4">
+                {consentPreview.blockedCount} known opted-out or unconfirmed number{consentPreview.blockedCount === 1 ? '' : 's'} will be skipped.
+              </p>
+            )}
 
             {/* Message input */}
             <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -121,9 +165,9 @@ export default function PasteBlastModal({ onClose }) {
               <span className={`text-sm ${isOverLimit ? 'text-nc-rose font-medium' : 'text-gray-500'}`}>
                 {charCount}/1600 characters
               </span>
-              {phones.length > 0 && (
+              {sendableCount > 0 && (
                 <span className="text-sm text-gray-500">
-                  Est. cost: ${(phones.length * 0.01).toFixed(2)}
+                  Est. cost: ${(sendableCount * 0.01).toFixed(2)}
                 </span>
               )}
             </div>
@@ -157,7 +201,7 @@ export default function PasteBlastModal({ onClose }) {
                     Sending...
                   </>
                 ) : (
-                  `Send to ${phones.length > 0 ? phones.length : '—'} number${phones.length === 1 ? '' : 's'}`
+                  `Send to ${sendableCount > 0 ? sendableCount : '—'} number${sendableCount === 1 ? '' : 's'}`
                 )}
               </button>
             </div>

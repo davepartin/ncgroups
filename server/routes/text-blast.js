@@ -6,6 +6,7 @@
  * POST /api/text-blast/preview - Preview recipients without sending
  */
 
+import 'dotenv/config';
 import { Router } from 'express';
 import twilio from 'twilio';
 import prisma from '../db.js';
@@ -21,6 +22,47 @@ const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
 
 // Opt-out footer added to every message
 const OPT_OUT_FOOTER = '\n\nReply STOP to opt out';
+const SENDABLE_CONSENT = new Set(['Legacy', 'OptedIn']);
+
+async function uniqueConsentedRecipients(people) {
+  const phones = [...new Set(people.map(person => person.phone).filter(Boolean))];
+  const preferences = phones.length
+    ? await prisma.smsPreference.findMany({ where: { phone: { in: phones } } })
+    : [];
+  const byPhone = new Map(preferences.map(preference => [preference.phone, preference.status]));
+  const seen = new Set();
+  const recipients = [];
+  for (const person of people) {
+    if (!person.phone || seen.has(person.phone)) continue;
+    const status = byPhone.get(person.phone) || (person.isOptedOut ? 'OptedOut' : 'Legacy');
+    if (!SENDABLE_CONSENT.has(status)) continue;
+    seen.add(person.phone);
+    recipients.push({ ...person, smsConsentStatus: status });
+  }
+  return recipients;
+}
+
+async function classifyRawPhones(phones) {
+  const cleaned = [...new Set(
+    (phones || [])
+      .map(phone => String(phone).replace(/\D/g, ''))
+      .map(phone => phone.length === 11 && phone.startsWith('1') ? phone.slice(1) : phone)
+      .filter(phone => phone.length === 10)
+  )];
+  const preferences = cleaned.length
+    ? await prisma.smsPreference.findMany({ where: { phone: { in: cleaned } } })
+    : [];
+  const blockedSet = new Set(
+    preferences
+      .filter(preference => !SENDABLE_CONSENT.has(preference.status))
+      .map(preference => preference.phone)
+  );
+  return {
+    cleaned,
+    sendable: cleaned.filter(phone => !blockedSet.has(phone)),
+    blocked: cleaned.filter(phone => blockedSet.has(phone))
+  };
+}
 
 /**
  * Helper: Get eligible recipients based on filters
@@ -37,6 +79,12 @@ async function getEligibleRecipients({ recipientIds, groupIds, gender, ageGroup 
   }
 
   const where = {
+    AND: [{
+      OR: [
+        { sourceStatus: null },
+        { sourceStatus: { not: 'archived' } }
+      ]
+    }],
     phone: { not: null },
     isOptedOut: false
   };
@@ -79,7 +127,7 @@ async function getEligibleRecipients({ recipientIds, groupIds, gender, ageGroup 
     orderBy: { lastName: 'asc' }
   });
 
-  return people;
+  return uniqueConsentedRecipients(people);
 }
 
 /**
@@ -98,9 +146,9 @@ async function sendSingleSMS(to, message) {
   };
 
   // Attach a status callback so Twilio reports delivery failures back to our app.
-  // Set APP_URL in your Vercel environment variables (e.g. https://your-app.vercel.app).
+  // APP_URL is the public Railway backend URL.
   if (process.env.APP_URL) {
-    params.statusCallback = `${process.env.APP_URL}/api/twilio/status-callback`;
+    params.statusCallback = `${process.env.APP_URL.replace(/\/$/, '')}/api/twilio/status-callback`;
   }
 
   return twilioClient.messages.create(params);
@@ -253,6 +301,26 @@ router.get('/sms-uri', async (req, res) => {
 });
 
 /**
+ * POST /api/text-blast/preview-numbers
+ * Reports which pasted numbers are sendable before any message is sent.
+ */
+router.post('/preview-numbers', async (req, res) => {
+  try {
+    const { phones } = req.body;
+    const result = await classifyRawPhones(Array.isArray(phones) ? phones : []);
+    res.json({
+      validCount: result.cleaned.length,
+      sendableCount: result.sendable.length,
+      blockedCount: result.blocked.length,
+      blocked: result.blocked
+    });
+  } catch (error) {
+    console.error('Error previewing pasted phone numbers:', error);
+    res.status(500).json({ error: 'Failed to preview pasted phone numbers' });
+  }
+});
+
+/**
  * POST /api/text-blast/send-to-numbers
  * Body: { message, phones: string[] }
  *
@@ -276,16 +344,15 @@ router.post('/send-to-numbers', async (req, res) => {
       return res.status(400).json({ error: 'At least one phone number is required' });
     }
 
-    // Clean, validate, and deduplicate phone numbers
-    const cleanedPhones = [...new Set(
-      phones
-        .map(p => String(p).replace(/\D/g, ''))       // strip non-digits
-        .map(p => p.length === 11 && p.startsWith('1') ? p.slice(1) : p) // strip leading 1
-        .filter(p => p.length === 10)                  // only valid 10-digit numbers
-    )];
+    // Clean, validate, deduplicate, and exclude known non-consenting numbers.
+    const classified = await classifyRawPhones(phones);
+    const cleanedPhones = classified.sendable;
 
     if (cleanedPhones.length === 0) {
-      return res.status(400).json({ error: 'No valid 10-digit phone numbers found' });
+      return res.status(400).json({
+        error: classified.cleaned.length ? 'All valid numbers are opted out or do not have recorded consent' : 'No valid 10-digit phone numbers found',
+        blockedCount: classified.blocked.length
+      });
     }
 
     const fullMessage = message.trim() + OPT_OUT_FOOTER;
@@ -313,6 +380,8 @@ router.post('/send-to-numbers', async (req, res) => {
       message: `Text blast sent to ${results.sent.length} numbers`,
       sentCount: results.sent.length,
       failedCount: results.failed.length,
+      blockedCount: classified.blocked.length,
+      blocked: classified.blocked.length > 0 ? classified.blocked : undefined,
       cost: `$${cost}`,
       failed: results.failed.length > 0 ? results.failed : undefined
     });

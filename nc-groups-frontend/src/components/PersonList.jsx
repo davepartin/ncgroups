@@ -30,9 +30,10 @@ export default function PersonList({ people, onPersonClick }) {
               {(person.firstName?.[0] || '').toUpperCase()}{(person.lastName?.[0] || '').toUpperCase()}
             </div>
             <div>
-              <h3 className={`text-sm font-semibold ${person.isOptedOut ? 'text-nc-rose' : 'text-nc-green'}`}>
+              <h3 className={`text-sm font-semibold ${person.isOptedOut ? 'text-nc-rose' : person.smsConsentStatus === 'Unknown' ? 'text-gray-600' : 'text-nc-green'}`}>
                 {person.firstName} {person.lastName}
                 {person.isOptedOut && <span className="ml-1.5 text-[10px] font-normal">(opted out)</span>}
+                {person.smsConsentStatus === 'Unknown' && <span className="ml-1.5 text-[10px] font-normal">(not subscribed)</span>}
                 {person.membershipStatus && (
                   <span className={`ml-1.5 text-[10px] font-normal px-1.5 py-0.5 rounded-full ${person.membershipStatus === 'Member' ? 'bg-nc-green/10 text-nc-green' :
                     person.membershipStatus === 'RegularAttender' ? 'bg-nc-blue/10 text-nc-blue' :

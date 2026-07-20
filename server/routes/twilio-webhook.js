@@ -5,6 +5,7 @@
  * POST /api/twilio/webhook - Receives incoming SMS from Twilio
  */
 
+import 'dotenv/config';
 import { Router } from 'express';
 import twilio from 'twilio';
 import prisma from '../db.js';
@@ -22,6 +23,47 @@ const ADMIN_PHONE_NUMBER = process.env.ADMIN_PHONE_NUMBER;
 // Keywords that Twilio recognizes for opt-out
 const OPT_OUT_KEYWORDS = ['STOP', 'STOPALL', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT'];
 const OPT_IN_KEYWORDS = ['START', 'YES', 'UNSTOP'];
+
+function validateTwilioWebhook(req, res, next) {
+  if (process.env.TWILIO_VALIDATE_WEBHOOKS === 'false') return next();
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const signature = req.get('X-Twilio-Signature');
+  if (!authToken || !signature) return res.status(403).send('Invalid Twilio signature');
+  const configuredBase = process.env.TWILIO_WEBHOOK_BASE_URL?.replace(/\/$/, '');
+  const requestUrl = configuredBase
+    ? `${configuredBase}${req.originalUrl}`
+    : `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  if (!twilio.validateRequest(authToken, signature, requestUrl, req.body)) {
+    return res.status(403).send('Invalid Twilio signature');
+  }
+  next();
+}
+
+async function setPhoneConsent(phone, status, source) {
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.smsPreference.upsert({
+      where: { phone },
+      create: {
+        phone,
+        status,
+        source,
+        consentedAt: status === 'OptedIn' ? now : null,
+        optedOutAt: status === 'OptedOut' ? now : null
+      },
+      update: {
+        status,
+        source,
+        consentedAt: status === 'OptedIn' ? now : undefined,
+        optedOutAt: status === 'OptedOut' ? now : null
+      }
+    }),
+    prisma.person.updateMany({
+      where: { phone },
+      data: { isOptedOut: status === 'OptedOut' }
+    })
+  ]);
+}
 
 /**
  * Send a text notification to the admin (you) when someone opts out.
@@ -51,7 +93,7 @@ async function notifyAdmin(message) {
  * Twilio sends incoming SMS messages here.
  * We check for STOP/START keywords and update the person's opt-out status.
  */
-router.post('/webhook', async (req, res) => {
+router.post('/webhook', validateTwilioWebhook, async (req, res) => {
   try {
     const { From, Body } = req.body;
 
@@ -69,39 +111,34 @@ router.post('/webhook', async (req, res) => {
     // Check if it's an opt-out keyword
     if (OPT_OUT_KEYWORDS.includes(messageText)) {
       // Find person by phone number and mark as opted out
-      const person = await prisma.person.findFirst({
+      const people = await prisma.person.findMany({
         where: { phone }
       });
 
-      if (person) {
-        await prisma.person.update({
-          where: { id: person.id },
-          data: { isOptedOut: true }
-        });
-        const name = `${person.firstName} ${person.lastName}`;
-        console.log(`Opted out: ${name} (${phone})`);
-        await notifyAdmin(`Opt-out: ${name} replied STOP and has been removed from your list.`);
+      await setPhoneConsent(phone, 'OptedOut', 'twilio-stop');
+      if (people.length) {
+        const names = people.map(person => `${person.firstName} ${person.lastName}`.trim()).join(', ');
+        console.log(`Opted out: ${names} (${phone})`);
+        await notifyAdmin(`Opt-out: ${names} replied STOP and has been removed from your list.`);
       } else {
         console.log(`Opt-out received from unknown number: ${phone}`);
-        await notifyAdmin(`Opt-out: Unknown number ${phone} replied STOP. They may not be in your database.`);
+        await notifyAdmin(`Opt-out: Unknown number ${phone} replied STOP. The preference was saved.`);
       }
     }
 
     // Check if it's an opt-in keyword
     if (OPT_IN_KEYWORDS.includes(messageText)) {
       // Find person by phone number and mark as opted in
-      const person = await prisma.person.findFirst({
+      const people = await prisma.person.findMany({
         where: { phone }
       });
 
-      if (person) {
-        await prisma.person.update({
-          where: { id: person.id },
-          data: { isOptedOut: false }
-        });
-        console.log(`Opted back in: ${person.firstName} ${person.lastName} (${phone})`);
+      await setPhoneConsent(phone, 'OptedIn', 'twilio-start');
+      if (people.length) {
+        const names = people.map(person => `${person.firstName} ${person.lastName}`.trim()).join(', ');
+        console.log(`Opted back in: ${names} (${phone})`);
       } else {
-        console.log(`Opt-in received from unknown number: ${phone}`);
+        console.log(`Opt-in received from unknown number and saved: ${phone}`);
       }
     }
 
@@ -128,20 +165,20 @@ router.post('/webhook', async (req, res) => {
  *   30003 - Unreachable handset (phone off or possibly disconnected):
  *           notify admin to review — not auto-removed since it may be temporary.
  */
-router.post('/status-callback', async (req, res) => {
+router.post('/status-callback', validateTwilioWebhook, async (req, res) => {
   try {
     const { To, MessageStatus, ErrorCode } = req.body;
 
     if (MessageStatus === 'failed' || MessageStatus === 'undelivered') {
       const phone = (To || '').replace(/^\+1/, '').replace(/\D/g, '');
-      const person = await prisma.person.findFirst({ where: { phone } });
-      const name = person ? `${person.firstName} ${person.lastName}` : null;
+      const people = await prisma.person.findMany({ where: { phone } });
+      const name = people.length ? people.map(person => `${person.firstName} ${person.lastName}`.trim()).join(', ') : null;
 
       // --- 21610: Recipient previously opted out ---
       if (ErrorCode === '21610') {
         console.log(`Status callback: opted-out error (21610) for ${phone}`);
-        if (person) {
-          await prisma.person.update({ where: { id: person.id }, data: { isOptedOut: true } });
+        await setPhoneConsent(phone, 'OptedOut', 'twilio-error-21610');
+        if (people.length) {
           console.log(`Auto opted-out: ${name} (${phone})`);
           await notifyAdmin(`Opt-out: ${name} (${phone}) was flagged by Twilio and removed from your list.`);
         } else {
@@ -152,9 +189,9 @@ router.post('/status-callback', async (req, res) => {
       // --- 30005: Number doesn't exist / permanently disconnected ---
       if (ErrorCode === '30005') {
         console.log(`Status callback: unknown/disconnected number (30005) for ${phone}`);
-        if (person) {
-          // Mark inactive so they're skipped on future blasts
-          await prisma.person.update({ where: { id: person.id }, data: { isOptedOut: true } });
+        await setPhoneConsent(phone, 'OptedOut', 'twilio-error-30005');
+        if (people.length) {
+          // Mark the phone as unavailable so it is skipped on future blasts.
           console.log(`Marked inactive (bad number): ${name} (${phone})`);
           await notifyAdmin(`Bad number: ${name} (${phone}) has a disconnected number and was marked inactive. Consider removing them from your list.`);
         } else {
@@ -165,7 +202,7 @@ router.post('/status-callback', async (req, res) => {
       // --- 30003: Handset unreachable (possibly temporary — phone off, no signal) ---
       if (ErrorCode === '30003') {
         console.log(`Status callback: unreachable handset (30003) for ${phone}`);
-        if (person) {
+        if (people.length) {
           // Don't auto-remove — this could be temporary. Just notify.
           await notifyAdmin(`Unreachable: ${name} (${phone}) couldn't be reached. Their phone may have been off, or the number may be disconnected. Worth a review if this keeps happening.`);
         }

@@ -4,6 +4,7 @@ import ConfirmDialog from './ConfirmDialog'
 const API_BASE = import.meta.env.VITE_API_URL || 'https://ncgroups-api-production.up.railway.app'
 
 export default function EditPersonModal({ person, groups, onClose, onSave, onDelete }) {
+  const sourceManaged = Boolean(person.sourceManaged)
   const [firstName, setFirstName] = useState(person.firstName || '')
   const [lastName, setLastName] = useState(person.lastName || '')
   const [phone, setPhone] = useState(person.phone || '')
@@ -14,13 +15,13 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
   const [selectedGroups, setSelectedGroups] = useState(
     person.groups?.map(g => g.id) || []
   )
-  const [isOptedOut, setIsOptedOut] = useState(person.isOptedOut || false)
+  const [smsConsentStatus, setSmsConsentStatus] = useState(person.smsConsentStatus || (person.isOptedOut ? 'OptedOut' : 'Legacy'))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const handleSave = async () => {
-    if (!firstName.trim() || !lastName.trim()) {
+    if (!sourceManaged && (!firstName.trim() || !lastName.trim())) {
       setError('First and last name are required')
       return
     }
@@ -37,7 +38,9 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
+        body: JSON.stringify(sourceManaged ? {
+          smsConsentStatus
+        } : {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           phone: phone.trim() || null,
@@ -45,7 +48,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
           ageGroup: ageGroup || null,
           membershipStatus: membershipStatus || null,
           gender: gender || null,
-          isOptedOut: isOptedOut,
+          smsConsentStatus,
           groupIds: selectedGroups
         })
       })
@@ -99,11 +102,16 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
       <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-nc-ink">Edit Person</h2>
+          <h2 className="text-xl font-bold text-nc-ink">{sourceManaged ? 'Person Details' : 'Edit Person'}</h2>
         </div>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {sourceManaged && (
+            <div className="bg-nc-blue/10 text-nc-blue px-4 py-3 rounded-lg text-sm">
+              Contact information and groups are managed by the NC Vault. Text consent is managed here and through START or STOP replies.
+            </div>
+          )}
           {/* Name Row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -114,6 +122,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
+                disabled={sourceManaged}
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-nc-green focus:outline-none"
               />
             </div>
@@ -125,6 +134,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
+                disabled={sourceManaged}
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-nc-green focus:outline-none"
               />
             </div>
@@ -140,6 +150,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                disabled={sourceManaged}
                 placeholder="10 digits"
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-nc-green focus:outline-none"
               />
@@ -152,6 +163,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={sourceManaged}
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-nc-green focus:outline-none"
               />
             </div>
@@ -166,11 +178,17 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
               <select
                 value={membershipStatus}
                 onChange={(e) => setMembershipStatus(e.target.value)}
+                disabled={sourceManaged}
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-nc-green focus:outline-none"
               >
                 <option value="">Not Set</option>
                 <option value="Member">Member</option>
+                <option value="MemberChild">Member Child</option>
                 <option value="RegularAttender">Regular Attender</option>
+                <option value="RegularAttenderChild">Regular Attender Child</option>
+                <option value="Visitor">Visitor</option>
+                <option value="VisitorChild">Visitor Child</option>
+                <option value="FourthCircle">Fourth Circle</option>
                 <option value="Youth">Youth</option>
                 <option value="Other">Other</option>
               </select>
@@ -182,6 +200,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
               <select
                 value={ageGroup}
                 onChange={(e) => setAgeGroup(e.target.value)}
+                disabled={sourceManaged}
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-nc-green focus:outline-none"
               >
                 <option value="">Not Set</option>
@@ -201,6 +220,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
+                disabled={sourceManaged}
                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-nc-green focus:outline-none"
               >
                 <option value="">Not Set</option>
@@ -210,31 +230,24 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
             </div>
           </div>
 
-          {/* Opt-Out Toggle */}
-          <div
-            className={`p-3 rounded-lg border-2 ${isOptedOut ? 'border-nc-rose bg-nc-rose/5' : 'border-gray-200'}`}
-          >
-            <label className="flex items-center justify-between cursor-pointer">
-              <div>
-                <span className={`font-medium ${isOptedOut ? 'text-nc-rose' : 'text-gray-700'}`}>
-                  Opted Out of Texts
-                </span>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {isOptedOut ? 'Will not receive text blasts' : 'Will receive text blasts'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsOptedOut(!isOptedOut)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isOptedOut ? 'bg-nc-rose' : 'bg-gray-300'
-                  }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isOptedOut ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                />
-              </button>
+          {/* Text Consent */}
+          <div className="p-3 rounded-lg border-2 border-gray-200">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Text Consent
             </label>
+            <select
+              value={smsConsentStatus}
+              onChange={(event) => setSmsConsentStatus(event.target.value)}
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-nc-green focus:outline-none"
+            >
+              <option value="Unknown">Unknown / do not text</option>
+              <option value="Legacy">Existing approved list</option>
+              <option value="OptedIn">Opted in</option>
+              <option value="OptedOut">Opted out</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              START records an opt-in. STOP records an opt-out for everyone sharing this phone number.
+            </p>
           </div>
 
           {/* Groups */}
@@ -247,7 +260,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
                 {groups.map(group => (
                   <label
                     key={group.id}
-                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedGroups.includes(group.id)
+                    className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${sourceManaged ? 'opacity-70' : 'cursor-pointer'} ${selectedGroups.includes(group.id)
                       ? 'bg-nc-green/10 text-nc-green'
                       : 'hover:bg-gray-50'
                       }`}
@@ -256,6 +269,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
                       type="checkbox"
                       checked={selectedGroups.includes(group.id)}
                       onChange={() => toggleGroup(group.id)}
+                      disabled={sourceManaged}
                       className="w-4 h-4 text-nc-green rounded focus:ring-nc-green"
                     />
                     <span className="text-sm truncate">{group.name}</span>
@@ -274,13 +288,15 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 flex items-center justify-between">
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={saving}
-            className="text-nc-rose text-sm font-medium hover:underline disabled:opacity-50"
-          >
-            Delete Person
-          </button>
+          {sourceManaged ? <span /> : (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={saving}
+              className="text-nc-rose text-sm font-medium hover:underline disabled:opacity-50"
+            >
+              Delete Person
+            </button>
+          )}
 
           <div className="flex gap-3">
             <button
@@ -304,7 +320,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
                   Saving...
                 </>
               ) : (
-                'Save Changes'
+                  sourceManaged ? 'Save Text Preference' : 'Save Changes'
               )}
             </button>
           </div>

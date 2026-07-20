@@ -11,43 +11,74 @@ datasource db {
 }
 
 model Person {
-  id          String   @id @default(uuid())
-  firstName   String   @map("first_name")
-  lastName    String   @map("last_name")
-  phone       String?  // 10-digit US phone number, stored clean (e.g., "9139017581")
-  email       String?
-  gender      Gender?
-  ageGroup    AgeGroup? @map("age_group")
-  isOptedOut  Boolean  @default(false) @map("is_opted_out")
+  id               String            @id @default(uuid())
+  sourceId         String?           @unique @map("source_id")
+  sourceManaged    Boolean           @default(false) @map("source_managed")
+  sourceStatus     String?           @map("source_status")
+  sourceSyncedAt   DateTime?         @map("source_synced_at")
+  firstName        String            @map("first_name")
+  lastName         String            @map("last_name")
+  phone            String? // 10-digit US phone number, stored clean (e.g., "9139017581")
+  email            String?
+  gender           Gender?
+  ageGroup         AgeGroup?         @map("age_group")
+  isOptedOut       Boolean           @default(false) @map("is_opted_out")
   membershipStatus MembershipStatus? @map("membership_status")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
   // Many-to-many relationship with groups
-  groups      PersonGroup[]
-  
+  groups PersonGroup[]
+
   @@map("people")
 }
 
 model Group {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  
+  id             String    @id @default(uuid())
+  sourceId       String?   @unique @map("source_id")
+  sourceManaged  Boolean   @default(false) @map("source_managed")
+  sourceStatus   String?   @map("source_status")
+  sourceSyncedAt DateTime? @map("source_synced_at")
+  name           String    @unique
+  description    String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
   // Many-to-many relationship with people
-  members     PersonGroup[]
-  
+  members PersonGroup[]
+
   @@map("groups")
 }
 
+model SmsPreference {
+  phone       String           @id
+  status      SmsConsentStatus @default(Unknown)
+  source      String?
+  consentedAt DateTime?        @map("consented_at")
+  optedOutAt  DateTime?        @map("opted_out_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@map("sms_preferences")
+}
+
+model VaultSyncState {
+  id             String    @id
+  lastPreviewAt  DateTime? @map("last_preview_at")
+  lastAppliedAt  DateTime? @map("last_applied_at")
+  lastSourceHash String?   @map("last_source_hash")
+  lastSummary    Json?     @map("last_summary")
+
+  @@map("vault_sync_state")
+}
+
 model PersonGroup {
-  personId    String   @map("person_id")
-  groupId     String   @map("group_id")
-  
-  person      Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  
+  personId String @map("person_id")
+  groupId  String @map("group_id")
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
   @@id([personId, groupId])
   @@map("person_groups")
 }
@@ -65,7 +96,19 @@ enum AgeGroup {
 
 enum MembershipStatus {
   Member
+  MemberChild
   RegularAttender
+  RegularAttenderChild
+  Visitor
+  VisitorChild
+  FourthCircle
   Youth
   Other
+}
+
+enum SmsConsentStatus {
+  Unknown
+  Legacy
+  OptedIn
+  OptedOut
 }

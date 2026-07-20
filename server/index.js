@@ -12,6 +12,7 @@ import peopleRoutes from './routes/people.js';
 import groupsRoutes from './routes/groups.js';
 import textBlastRoutes from './routes/text-blast.js';
 import twilioWebhookRoutes from './routes/twilio-webhook.js';
+import vaultSyncRoutes from './routes/vault-sync.js';
 import { authenticateToken } from './middleware/auth.js';
 
 // Load environment variables
@@ -20,10 +21,12 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Health check (no auth required)
 app.get('/health', (req, res) => {
@@ -33,6 +36,7 @@ app.get('/health', (req, res) => {
 // Public routes
 app.use('/api/auth', authRoutes);
 app.use('/api/twilio', twilioWebhookRoutes); // Twilio webhook (no auth - Twilio calls this)
+app.use('/api/vault-sync', vaultSyncRoutes); // Sync routes use a dedicated token or staff login
 
 // Protected routes (require authentication)
 app.use('/api/people', authenticateToken, peopleRoutes);

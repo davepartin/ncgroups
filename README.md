@@ -4,12 +4,13 @@ A staff-only app for managing church contacts and enabling quick group communica
 
 ## Features
 
-- 👥 **People Management**: Add, edit, and search contacts
-- 📁 **Group Organization**: Ministry groups, D-Groups, special groups
+- 👥 **NC Vault Directory**: Search the staff-safe people records published from Obsidian
+- 📁 **Vault-managed Groups**: Ministry groups and memberships come from the NC Vault
 - 🔍 **Smart Filtering**: Filter by group AND demographic (e.g., "Adult Ladies in Hospitality")
 - 💬 **Group Text**: Open native SMS with multiple recipients
 - 📢 **Text Blast**: Send announcements via Twilio (one-way)
-- 🚫 **Opt-out Tracking**: Respect SMS preferences
+- 🚫 **Consent Tracking**: START and STOP preferences follow the phone number and are honored everywhere
+- 📋 **Paste & Text**: Paste a clean list or an Obsidian table column without losing the existing mobile workflow
 
 ## Tech Stack
 
@@ -56,6 +57,9 @@ A staff-only app for managing church contacts and enabling quick group communica
    If you already have a database with the old gender enum (Guy/Lady), run once:
    `psql $DATABASE_URL -f prisma/migrate-gender-to-male-female.sql`
 
+   Before deploying the NC Vault sync to an existing database, run once:
+   `psql $DATABASE_URL -f prisma/vault-sync-migration.sql`
+
 5. Generate Prisma client:
    ```bash
    npm run db:generate
@@ -79,7 +83,34 @@ A staff-only app for managing church contacts and enabling quick group communica
 | `TWILIO_ACCOUNT_SID` | Twilio Account SID (from Twilio Console) |
 | `TWILIO_AUTH_TOKEN` | Twilio Auth Token (from Twilio Console) |
 | `TWILIO_PHONE_NUMBER` | Twilio phone number for sending SMS |
+| `ADMIN_PHONE_NUMBER` | Optional staff number for delivery and opt-out notices |
+| `APP_URL` | Public Railway API URL used for Twilio delivery callbacks |
+| `TWILIO_WEBHOOK_BASE_URL` | Exact public Railway API URL used to validate Twilio webhook signatures |
+| `TWILIO_VALIDATE_WEBHOOKS` | Keep `true` in production; `false` is only for local webhook testing |
+| `NCGROUPS_SYNC_TOKEN` | Dedicated long random token used only by the NC Vault publisher |
 | `PORT` | Server port (default: 3000) |
+
+## NC Vault Sync
+
+The staff-safe NC Obsidian vault is the source of truth for people, groups, contact information, and group membership. NCGroups stores a published copy for fast use on staff phones. Text consent stays in NCGroups because it changes through Twilio START and STOP replies.
+
+The publisher always previews changes first and reports creates, updates, archives, shared phones, and matching conflicts. It only applies the same reviewed payload and never sends a text.
+
+From the NC vault, staff can double-click `scripts/Publish NCGroups.command`, or run:
+
+```bash
+python3 scripts/sync_ncgroups.py --audit
+python3 scripts/sync_ncgroups.py
+python3 scripts/sync_ncgroups.py --apply
+```
+
+Store the sync token in macOS Keychain instead of an Obsidian note:
+
+```bash
+security add-generic-password -a "$USER" -s ncgroups-sync-token -w
+```
+
+The first command is a local audit. The second previews the live changes. The third previews again and requires confirmation before publishing.
 
 ## Data Import
 
