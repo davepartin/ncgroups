@@ -323,7 +323,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-nc-light flex flex-col">
       {/* Header */}
-      <header className="bg-nc-green text-white px-4 py-2 shadow-lg sticky top-0 z-40">
+      <header className="bg-nc-green text-white px-4 py-2.5 shadow-lg sticky top-0 z-40">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
@@ -331,7 +331,7 @@ export default function Dashboard() {
             </div>
             <div>
               <h1 className="font-display font-bold text-base">
-                NC Groups <span className="text-xs font-normal opacity-70 ml-1">v5</span>
+                NC Groups <span className="text-xs font-normal opacity-70 ml-1">v5.1</span>
               </h1>
               <p className="text-[10px] text-white/70 leading-tight">
                 {syncStatus?.lastAppliedAt
@@ -352,7 +352,7 @@ export default function Dashboard() {
       </header>
 
       {/* Search & Actions Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-[52px] z-30">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 sm:sticky sm:top-[52px] z-30">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row gap-3">
           {/* Search Input (40%) */}
           <div className="relative w-full sm:w-[40%]">
@@ -361,7 +361,7 @@ export default function Dashboard() {
             </svg>
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search people or phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-2 py-2.5 rounded-xl border-2 border-gray-200 focus:border-nc-green focus:outline-none transition-colors text-sm"
@@ -384,9 +384,9 @@ export default function Dashboard() {
             <button
               onClick={handleCopyNumbers}
               disabled={actionDisabled || copyLoading}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm ${copied
+              className={`flex-1 min-h-11 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl border text-xs font-semibold transition-all shadow-sm ${copied
                 ? 'bg-green-600 text-white'
-                : 'bg-nc-rose text-white hover:opacity-90'
+                : 'bg-white border-nc-green/30 text-nc-green hover:border-nc-green hover:bg-nc-green/5'
                 } ${actionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {copied ? (
@@ -410,18 +410,18 @@ export default function Dashboard() {
             <button
               onClick={() => setShowTextBlast(true)}
               disabled={massTextDisabled}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all ${massTextDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-nc-blue hover:opacity-90'
+              className={`flex-1 min-h-11 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all ${massTextDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-nc-blue hover:opacity-90'
                 }`}
             >
               <span className="truncate">
-                {!hasActiveFilters ? 'Select People First' : 'Mass Text'}
+                {!hasActiveFilters ? 'Choose Filter' : 'Mass Text'}
               </span>
             </button>
 
             {/* Paste & Text Button */}
             <button
               onClick={() => setShowPasteBlast(true)}
-              className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all bg-nc-rose hover:opacity-90"
+              className="flex-1 min-h-11 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold text-white shadow-sm transition-all bg-nc-rose hover:opacity-90"
             >
               <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -443,8 +443,6 @@ export default function Dashboard() {
         setSelectedGender={setSelectedGender}
         selectedMembershipStatus={selectedMembershipStatus}
         setSelectedMembershipStatus={setSelectedMembershipStatus}
-        clearFilters={clearFilters}
-        hasActiveFilters={hasActiveFilters}
       />
 
       {/* Results Header */}
@@ -465,7 +463,7 @@ export default function Dashboard() {
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="text-nc-rose text-sm font-medium hover:underline"
+                className="text-nc-rose text-xs font-semibold border border-nc-rose/20 rounded-full px-3 py-1.5 hover:bg-nc-rose/5"
               >
                 Clear All
               </button>

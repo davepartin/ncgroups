@@ -9,6 +9,11 @@ export default function PersonList({ people, onPersonClick }) {
     const charCodeSum = (first.charCodeAt(0) || 0) + (last.charCodeAt(0) || 0);
     return colors[charCodeSum % colors.length];
   };
+  const formatPhone = (phone) => {
+    const digits = String(phone || '').replace(/\D/g, '')
+    if (digits.length !== 10) return phone
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+  }
   if (people.length === 0) {
     return (
       <div className="p-8 text-center text-gray-500">
@@ -23,6 +28,14 @@ export default function PersonList({ people, onPersonClick }) {
         <div
           key={person.id}
           onClick={() => onPersonClick(person)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              onPersonClick(person)
+            }
+          }}
+          role="button"
+          tabIndex={0}
           className="p-3.5 bg-white flex items-center justify-between cursor-pointer rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200"
         >
           <div className="flex items-center gap-3">
@@ -49,11 +62,11 @@ export default function PersonList({ people, onPersonClick }) {
                 {person.ageGroup && person.gender && <span>•</span>}
                 {person.gender && <span>{person.gender}</span>}
                 {(person.ageGroup || person.gender) && person.phone && <span>•</span>}
-                {person.phone && <span>{person.phone}</span>}
+                {person.phone && <span>{formatPhone(person.phone)}</span>}
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-1 justify-end max-w-[40%]">
+          <div className="hidden sm:flex flex-wrap gap-1 justify-end max-w-[40%]">
             {person.groups?.slice(0, 3).map(g => (
               <span key={g.id} className="px-1.5 py-0.5 bg-gray-100 text-[10px] rounded-full whitespace-nowrap">
                 {g.name}
