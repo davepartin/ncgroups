@@ -25,7 +25,9 @@ app.set('trust proxy', 1);
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+// The staff-only vault publisher sends the complete NC directory in one request.
+// Keep a bounded limit while allowing that authenticated payload to fit.
+app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: false }));
 
 // Health check (no auth required)
