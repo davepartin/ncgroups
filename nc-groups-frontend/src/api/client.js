@@ -34,7 +34,7 @@ const apiRequest = async (endpoint, options = {}) => {
     headers,
   })
 
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 403) {
     // Token expired or invalid
     setToken(null)
     window.location.reload()
@@ -94,6 +94,10 @@ export const getGroups = async () => {
   return { groups: data.groups || [] }
 }
 
+export const getVaultSyncStatus = async () => {
+  return apiRequest('/api/vault-sync/status')
+}
+
 export const createGroup = async (groupData) => {
   return apiRequest('/api/groups', {
     method: 'POST',
@@ -128,7 +132,7 @@ export const getFilteredPhones = async (filters) => {
   const { people } = await getPeople()
 
   const filtered = people.filter(person => {
-    if (!person.phone || person.isOptedOut) return false
+    if (!person.phone || !['Legacy', 'OptedIn'].includes(person.smsConsentStatus)) return false
     if (filters.groupId) {
       const inGroup = person.groups?.some(g => g.id === filters.groupId)
       if (!inGroup) return false
@@ -139,7 +143,7 @@ export const getFilteredPhones = async (filters) => {
   })
 
   // Return clean list of phones
-  const phones = filtered.map(p => p.phone).filter(Boolean)
+  const phones = [...new Set(filtered.map(p => p.phone).filter(Boolean))]
 
   return { phones, count: phones.length }
 }

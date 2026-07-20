@@ -14,6 +14,23 @@ import prisma from '../db.js';
 
 const router = Router();
 
+async function attachSmsPreferences(people) {
+  const phones = [...new Set(people.map(person => person.phone).filter(Boolean))];
+  const preferences = phones.length
+    ? await prisma.smsPreference.findMany({ where: { phone: { in: phones } } })
+    : [];
+  const byPhone = new Map(preferences.map(preference => [preference.phone, preference]));
+  return people.map(person => {
+    const preference = person.phone ? byPhone.get(person.phone) : null;
+    const smsConsentStatus = preference?.status || (person.isOptedOut ? 'OptedOut' : 'Legacy');
+    return {
+      ...person,
+      isOptedOut: smsConsentStatus === 'OptedOut',
+      smsConsentStatus
+    };
+  });
+}
+
 /**
  * GET /api/people
  * Query params:
@@ -44,7 +61,14 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     // Build where clause
-    const where = {};
+    const where = {
+      AND: [{
+        OR: [
+          { sourceStatus: null },
+          { sourceStatus: { not: 'archived' } }
+        ]
+      }]
+    };
 
     // Search by name
     if (search) {
@@ -115,10 +139,11 @@ router.get('/', async (req, res) => {
       ...person,
       groups: person.groups.map(pg => pg.group)
     }));
+    const withPreferences = await attachSmsPreferences(transformed);
 
     res.json({
-      count: transformed.length,
-      people: transformed
+      count: withPreferences.length,
+      people: withPreferences
     });
   } catch (error) {
     console.error('Error fetching people:', error);
@@ -149,10 +174,11 @@ router.get('/:id', async (req, res) => {
     }
 
     // Flatten groups
-    res.json({
+    const [withPreference] = await attachSmsPreferences([{
       ...person,
       groups: person.groups.map(pg => pg.group)
-    });
+    }]);
+    res.json(withPreference);
   } catch (error) {
     console.error('Error fetching person:', error);
     res.status(500).json({ error: 'Failed to fetch person' });
@@ -182,8 +208,6 @@ router.post('/', async (req, res) => {
         phone: validPhone,
         email: email || null,
         gender: gender || null,
-        email: email || null,
-        gender: gender || null,
         ageGroup: ageGroup || null,
         membershipStatus: membershipStatus || null,
         groups: {
@@ -201,10 +225,19 @@ router.post('/', async (req, res) => {
       }
     });
 
-    res.status(201).json({
+    if (validPhone) {
+      await prisma.smsPreference.upsert({
+        where: { phone: validPhone },
+        create: { phone: validPhone, status: 'Unknown', source: 'staff-app' },
+        update: {}
+      });
+    }
+
+    const [withPreference] = await attachSmsPreferences([{
       ...person,
       groups: person.groups.map(pg => pg.group)
-    });
+    }]);
+    res.status(201).json(withPreference);
   } catch (error) {
     console.error('Error creating person:', error);
     res.status(500).json({ error: 'Failed to create person' });
@@ -218,12 +251,18 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, phone, email, gender, ageGroup, membershipStatus, isOptedOut, groupIds } = req.body;
+    const { firstName, lastName, phone, email, gender, ageGroup, membershipStatus, isOptedOut, smsConsentStatus, groupIds } = req.body;
 
     // Check if person exists
     const existing = await prisma.person.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ error: 'Person not found' });
+    }
+
+    const sourceOwnedChanges = [firstName, lastName, phone, email, gender, ageGroup, membershipStatus, groupIds]
+      .some(value => value !== undefined);
+    if (existing.sourceManaged && sourceOwnedChanges) {
+      return res.status(409).json({ error: 'This person is managed by the NC Vault. Update their contact or group information in Obsidian.' });
     }
 
     // Build update data
@@ -234,12 +273,40 @@ router.put('/:id', async (req, res) => {
     if (gender !== undefined) updateData.gender = gender || null;
     if (ageGroup !== undefined) updateData.ageGroup = ageGroup || null;
     if (membershipStatus !== undefined) updateData.membershipStatus = membershipStatus || null;
-    if (isOptedOut !== undefined) updateData.isOptedOut = isOptedOut;
+    const requestedConsent = smsConsentStatus || (isOptedOut !== undefined ? (isOptedOut ? 'OptedOut' : 'OptedIn') : null);
+    if (requestedConsent && !['Unknown', 'Legacy', 'OptedIn', 'OptedOut'].includes(requestedConsent)) {
+      return res.status(400).json({ error: 'Invalid SMS consent status' });
+    }
+    if (requestedConsent) updateData.isOptedOut = requestedConsent === 'OptedOut';
 
     // Handle phone cleaning
     if (phone !== undefined) {
       const cleanPhone = phone ? phone.replace(/\D/g, '').slice(0, 10) : null;
       updateData.phone = cleanPhone && cleanPhone.length === 10 ? cleanPhone : null;
+    }
+
+    const preferencePhone = updateData.phone !== undefined ? updateData.phone : existing.phone;
+    if (requestedConsent && preferencePhone) {
+      const now = new Date();
+      const optedOut = requestedConsent === 'OptedOut';
+      const optedIn = requestedConsent === 'OptedIn' || requestedConsent === 'Legacy';
+      await prisma.smsPreference.upsert({
+        where: { phone: preferencePhone },
+        create: {
+          phone: preferencePhone,
+          status: requestedConsent,
+          source: 'staff-app',
+          consentedAt: optedIn ? now : null,
+          optedOutAt: optedOut ? now : null
+        },
+        update: {
+          status: requestedConsent,
+          source: 'staff-app',
+          consentedAt: optedIn ? now : undefined,
+          optedOutAt: optedOut ? now : null
+        }
+      });
+      await prisma.person.updateMany({ where: { phone: preferencePhone }, data: { isOptedOut: optedOut } });
     }
 
     // Update person
@@ -279,10 +346,10 @@ router.put('/:id', async (req, res) => {
     });
 
 
-    const responseData = {
+    const [responseData] = await attachSmsPreferences([{
       ...updatedPerson,
       groups: updatedPerson.groups.map(pg => pg.group)
-    };
+    }]);
 
     console.log('PUT /api/people/:id response:', {
       id: responseData.id,
@@ -308,6 +375,9 @@ router.delete('/:id', async (req, res) => {
     const existing = await prisma.person.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ error: 'Person not found' });
+    }
+    if (existing.sourceManaged) {
+      return res.status(409).json({ error: 'Vault-managed people cannot be deleted here. Archive the person in the NC Vault.' });
     }
 
     // Delete (cascade will remove group memberships)

@@ -66,7 +66,7 @@ export default function TextBlastModal({ recipients, filters, filterDescription,
       <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
         <h2 className="text-xl font-bold mb-2">Send Text Blast</h2>
         <p className="text-gray-600 mb-4">
-          Sending to <span className="font-semibold text-nc-green">{recipientCount}</span> people: <span className="font-medium">{filterDescription}</span>
+          Sending to <span className="font-semibold text-nc-green">{recipientCount}</span> unique phone number{recipientCount === 1 ? '' : 's'}: <span className="font-medium">{filterDescription}</span>
         </p>
 
         {success ? (

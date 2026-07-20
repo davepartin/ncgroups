@@ -21,6 +21,12 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const groups = await prisma.group.findMany({
+      where: {
+        OR: [
+          { sourceStatus: null },
+          { sourceStatus: { not: 'archived' } }
+        ]
+      },
       orderBy: { name: 'asc' },
       include: {
         _count: {
@@ -145,6 +151,9 @@ router.put('/:id', async (req, res) => {
     if (!existing) {
       return res.status(404).json({ error: 'Group not found' });
     }
+    if (existing.sourceManaged) {
+      return res.status(409).json({ error: 'This group is managed by the NC Vault. Update it in Obsidian.' });
+    }
 
     // Check for duplicate name if changing
     if (name && name !== existing.name) {
@@ -199,6 +208,9 @@ router.delete('/:id', async (req, res) => {
 
     if (!existing) {
       return res.status(404).json({ error: 'Group not found' });
+    }
+    if (existing.sourceManaged) {
+      return res.status(409).json({ error: 'Vault-managed groups cannot be deleted here. Archive the group in the NC Vault.' });
     }
 
     // Warn if group has members (but still allow delete)
