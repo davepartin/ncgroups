@@ -160,8 +160,8 @@ router.post('/webhook', validateTwilioWebhook, async (req, res) => {
  * We handle three failure cases:
  *
  *   21610 - Opted-out recipient: auto-mark as opted out, notify admin.
- *   30005 - Unknown/disconnected number: auto-mark as opted out (inactive),
- *           notify admin to review and remove from the contact list.
+ *   30005 - Unknown destination handset: notify admin for review, but do not
+ *           change consent because this can also be a temporary carrier/device issue.
  *   30003 - Unreachable handset (phone off or possibly disconnected):
  *           notify admin to review — not auto-removed since it may be temporary.
  */
@@ -186,16 +186,13 @@ router.post('/status-callback', validateTwilioWebhook, async (req, res) => {
         }
       }
 
-      // --- 30005: Number doesn't exist / permanently disconnected ---
+      // --- 30005: Unknown destination handset (may be temporary) ---
       if (ErrorCode === '30005') {
-        console.log(`Status callback: unknown/disconnected number (30005) for ${phone}`);
-        await setPhoneConsent(phone, 'OptedOut', 'twilio-error-30005');
+        console.log(`Status callback: unknown destination handset (30005) for ${phone}; consent unchanged`);
         if (people.length) {
-          // Mark the phone as unavailable so it is skipped on future blasts.
-          console.log(`Marked inactive (bad number): ${name} (${phone})`);
-          await notifyAdmin(`Bad number: ${name} (${phone}) has a disconnected number and was marked inactive. Consider removing them from your list.`);
+          await notifyAdmin(`Delivery warning: ${name} (${phone}) returned Twilio 30005. The phone may be off, out of signal, disconnected, or affected by a carrier issue. Texting status was not changed.`);
         } else {
-          await notifyAdmin(`Bad number: ${phone} appears disconnected but isn't in your database. No action needed.`);
+          await notifyAdmin(`Delivery warning: ${phone} returned Twilio 30005 but isn't in your database. No action was taken.`);
         }
       }
 
