@@ -189,6 +189,7 @@ export default function EditPersonModal({ person, groups, onClose, onSave, onDel
                 <option value="Visitor">Visitor</option>
                 <option value="VisitorChild">Visitor Child</option>
                 <option value="FourthCircle">Fourth Circle</option>
+                <option value="YouthParentNonNc">Youth Parent Non-NC</option>
                 <option value="Youth">Youth</option>
                 <option value="Other">Other</option>
               </select>
