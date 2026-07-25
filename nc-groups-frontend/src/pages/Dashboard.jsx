@@ -6,6 +6,7 @@ import TextBlastModal from '../components/TextBlastModal'
 import PasteBlastModal from '../components/PasteBlastModal'
 import EditPersonModal from '../components/EditPersonModal'
 import Toast from '../components/Toast'
+import { ADULT_TEXTABLE_MEMBERSHIPS, isTextablePerson } from '../utils/textingEligibility'
 
 export default function Dashboard() {
   const [people, setPeople] = useState([])
@@ -18,7 +19,7 @@ export default function Dashboard() {
   const [selectedGroups, setSelectedGroups] = useState([]) // Array of group IDs
   const [selectedAgeGroup, setSelectedAgeGroup] = useState(null) // Adult, Youth, Child
   const [selectedGender, setSelectedGender] = useState(null) // Male, Female
-  const [selectedMembershipStatus, setSelectedMembershipStatus] = useState([]) // Array of Member, RegularAttender, Youth, Other
+  const [selectedMembershipStatus, setSelectedMembershipStatus] = useState([]) // Array of Member, RegularAttender, Visitor, Youth, Other
 
   // Sort: 'firstName' | 'lastName'
   const [sortBy, setSortBy] = useState('lastName')
@@ -95,6 +96,13 @@ export default function Dashboard() {
         return false
       }
 
+      // The Adults view is the normal adult church-texting audience. Keep
+      // youth parents and incomplete/other adult records visible elsewhere,
+      // but do not include them when staff chooses Adults.
+      if (selectedAgeGroup === 'Adult' && !ADULT_TEXTABLE_MEMBERSHIPS.has(person.membershipStatus)) {
+        return false
+      }
+
       // Gender filter
       if (selectedGender && person.gender !== selectedGender) {
         return false
@@ -105,8 +113,7 @@ export default function Dashboard() {
         const membershipBucket = {
           MemberChild: 'Member',
           RegularAttenderChild: 'RegularAttender',
-          Visitor: 'Other',
-          VisitorChild: 'Other',
+          VisitorChild: 'Visitor',
           FourthCircle: 'Other'
         }[person.membershipStatus] || person.membershipStatus
         if (!selectedMembershipStatus.includes(membershipBucket)) {
@@ -132,7 +139,7 @@ export default function Dashboard() {
   const textablePeople = useMemo(() => {
     const byPhone = new Map()
     for (const person of filteredPeople) {
-      if (!person.phone || !['Legacy', 'OptedIn'].includes(person.smsConsentStatus) || byPhone.has(person.phone)) continue
+      if (!isTextablePerson(person) || byPhone.has(person.phone)) continue
       byPhone.set(person.phone, person)
     }
     return [...byPhone.values()]
