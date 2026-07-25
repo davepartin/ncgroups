@@ -121,6 +121,7 @@ The import script (`scripts/import-data.js`) handles:
 - **Phone cleaning**: Removes commas, non-digits, validates 10-digit US numbers
 - **Gender mapping**: f → Female, m → Male
 - **Age groups**: M → Adult, Y → Youth, C → Child, YP → Adult + Youth Parents group
+- **Adult texting eligibility**: Adults are textable only when membership is Member, Regular Attender, or Visitor. Youth Parent Non-NC, blank/Other, and Fourth Circle adult records remain available for lookup but are excluded from normal adult texting.
 - **Opt-outs**: Detects "opt out" in name field
 - **Group memberships**: Reads TRUE/FALSE from 29+ group columns
 
