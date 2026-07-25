@@ -173,6 +173,7 @@ export default function FilterBar({
             {[
               ['Member', 'Members'],
               ['RegularAttender', 'Regulars'],
+              ['Visitor', 'Visitors'],
               ['Youth', 'Youth'],
               ['Other', 'Other']
             ].map(([value, label]) => (
