@@ -76,6 +76,8 @@ export default function AddPersonModal({ groups, onClose, onAdd }) {
                             >
                                 <option value="Member">Member</option>
                                 <option value="RegularAttender">Regular Attender</option>
+                                <option value="Visitor">Visitor</option>
+                                <option value="YouthParentNonNc">Youth Parent Non-NC</option>
                                 <option value="Youth">Youth</option>
                                 <option value="Other">Other</option>
                             </select>
@@ -161,4 +163,3 @@ export default function AddPersonModal({ groups, onClose, onAdd }) {
         </div>
     )
 }
-

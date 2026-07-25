@@ -6,6 +6,7 @@ ALTER TYPE "MembershipStatus" ADD VALUE IF NOT EXISTS 'RegularAttenderChild';
 ALTER TYPE "MembershipStatus" ADD VALUE IF NOT EXISTS 'Visitor';
 ALTER TYPE "MembershipStatus" ADD VALUE IF NOT EXISTS 'VisitorChild';
 ALTER TYPE "MembershipStatus" ADD VALUE IF NOT EXISTS 'FourthCircle';
+ALTER TYPE "MembershipStatus" ADD VALUE IF NOT EXISTS 'YouthParentNonNc';
 
 DO $$
 BEGIN

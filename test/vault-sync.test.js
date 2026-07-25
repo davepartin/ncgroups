@@ -56,6 +56,13 @@ test('validatePayload normalizes phone and de-duplicates group membership', () =
   assert.deepEqual(validated.people[0].groupSourceIds, ['nc:group:one']);
 });
 
+test('validatePayload accepts the youth-parent-non-NC membership status', () => {
+  const input = samplePayload();
+  input.people[0].membershipStatus = 'YouthParentNonNc';
+  const validated = validatePayload(input);
+  assert.equal(validated.people[0].membershipStatus, 'YouthParentNonNc');
+});
+
 test('initial sync adopts one exact existing person and group', () => {
   const payload = validatePayload(samplePayload());
   const currentGroups = [{
