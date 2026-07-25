@@ -10,6 +10,7 @@ const MEMBERSHIP_STATUSES = new Set([
   'Visitor',
   'VisitorChild',
   'FourthCircle',
+  'YouthParentNonNc',
   'Youth',
   'Other',
   null
