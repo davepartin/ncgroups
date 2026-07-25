@@ -10,6 +10,7 @@ import 'dotenv/config';
 import { Router } from 'express';
 import twilio from 'twilio';
 import prisma from '../db.js';
+import { adultTextingEligibilityWhere } from '../services/texting-eligibility.js';
 
 const router = Router();
 
@@ -66,7 +67,7 @@ async function classifyRawPhones(phones) {
 
 /**
  * Helper: Get eligible recipients based on filters
- * Returns people who have phone numbers and are NOT opted out
+ * Returns people with eligible phone numbers and consent who are NOT opted out
  */
 async function getEligibleRecipients({ recipientIds, groupIds, gender, ageGroup }) {
   // SAFETY CHECK: Prevent accidental "send to everyone"
@@ -84,7 +85,7 @@ async function getEligibleRecipients({ recipientIds, groupIds, gender, ageGroup 
         { sourceStatus: null },
         { sourceStatus: { not: 'archived' } }
       ]
-    }],
+    }, adultTextingEligibilityWhere()],
     phone: { not: null },
     isOptedOut: false
   };
