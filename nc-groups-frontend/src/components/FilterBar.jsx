@@ -106,24 +106,6 @@ export default function FilterBar({
     .filter(group => !searchValue || group.name.toLowerCase().includes(searchValue))
     .sort((left, right) => left.name.localeCompare(right.name))
 
-  const isSmallGroup = (name) => /d-group|neighborhood group/i.test(name)
-  const isLifeStageGroup = (name) => /youth|student|kids|children|young adult|joy club|men('|’)s|women('|’)s/i.test(name)
-
-  const groupSections = [
-    {
-      title: 'Age & Life Stage',
-      groups: availableGroups.filter(group => isLifeStageGroup(group.name) && !isSmallGroup(group.name))
-    },
-    {
-      title: 'D-Groups & Small Groups',
-      groups: availableGroups.filter(group => isSmallGroup(group.name))
-    },
-    {
-      title: 'Ministry Teams',
-      groups: availableGroups.filter(group => !isLifeStageGroup(group.name) && !isSmallGroup(group.name))
-    }
-  ].filter(section => section.groups.length > 0)
-
   const labelClass = 'text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0 w-14 sm:w-16'
 
   return (
@@ -276,21 +258,14 @@ export default function FilterBar({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-6">
-              {groupSections.map(section => (
-                <section key={section.title}>
-                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 px-1">
-                    {section.title}
-                  </h3>
-                  <div className="space-y-2">
-                    {section.groups.map(group => (
-                      <GroupRow key={group.id} group={group} onSelect={selectGroup} />
-                    ))}
-                  </div>
-                </section>
-              ))}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+              <div className="space-y-2">
+                {availableGroups.map(group => (
+                  <GroupRow key={group.id} group={group} onSelect={selectGroup} />
+                ))}
+              </div>
 
-              {groupSections.length === 0 && (
+              {availableGroups.length === 0 && (
                 <div className="text-center py-12">
                   <div className="w-12 h-12 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center mx-auto mb-3">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
