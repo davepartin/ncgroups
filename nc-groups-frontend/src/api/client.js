@@ -1,4 +1,5 @@
 // API Client for NC Groups Backend
+import { isTextablePerson } from '../utils/textingEligibility'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://ncgroups-api-production.up.railway.app'
 
@@ -132,7 +133,7 @@ export const getFilteredPhones = async (filters) => {
   const { people } = await getPeople()
 
   const filtered = people.filter(person => {
-    if (!person.phone || !['Legacy', 'OptedIn'].includes(person.smsConsentStatus)) return false
+    if (!isTextablePerson(person)) return false
     if (filters.groupId) {
       const inGroup = person.groups?.some(g => g.id === filters.groupId)
       if (!inGroup) return false
