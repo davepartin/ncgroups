@@ -277,7 +277,6 @@ router.put('/:id', async (req, res) => {
     if (requestedConsent && !['Unknown', 'Legacy', 'OptedIn', 'OptedOut'].includes(requestedConsent)) {
       return res.status(400).json({ error: 'Invalid SMS consent status' });
     }
-    if (requestedConsent) updateData.isOptedOut = requestedConsent === 'OptedOut';
 
     // Handle phone cleaning
     if (phone !== undefined) {
@@ -286,27 +285,43 @@ router.put('/:id', async (req, res) => {
     }
 
     const preferencePhone = updateData.phone !== undefined ? updateData.phone : existing.phone;
-    if (requestedConsent && preferencePhone) {
-      const now = new Date();
-      const optedOut = requestedConsent === 'OptedOut';
-      const optedIn = requestedConsent === 'OptedIn' || requestedConsent === 'Legacy';
-      await prisma.smsPreference.upsert({
+    const phoneIsNewToPerson = Boolean(preferencePhone) && preferencePhone !== existing.phone;
+
+    if (phoneIsNewToPerson) {
+      // Consent belongs to the phone number, not to the person, so a number this
+      // person did not have before keeps whatever that number already recorded
+      // and otherwise starts Unknown. This edit cannot carry an old number's
+      // consent onto a number that has never agreed to be texted.
+      const preference = await prisma.smsPreference.upsert({
         where: { phone: preferencePhone },
-        create: {
-          phone: preferencePhone,
-          status: requestedConsent,
-          source: 'staff-app',
-          consentedAt: optedIn ? now : null,
-          optedOutAt: optedOut ? now : null
-        },
-        update: {
-          status: requestedConsent,
-          source: 'staff-app',
-          consentedAt: optedIn ? now : undefined,
-          optedOutAt: optedOut ? now : null
-        }
+        create: { phone: preferencePhone, status: 'Unknown', source: 'staff-app' },
+        update: {}
       });
-      await prisma.person.updateMany({ where: { phone: preferencePhone }, data: { isOptedOut: optedOut } });
+      updateData.isOptedOut = preference.status === 'OptedOut';
+    } else if (requestedConsent) {
+      updateData.isOptedOut = requestedConsent === 'OptedOut';
+      if (preferencePhone) {
+        const now = new Date();
+        const optedOut = requestedConsent === 'OptedOut';
+        const optedIn = requestedConsent === 'OptedIn' || requestedConsent === 'Legacy';
+        await prisma.smsPreference.upsert({
+          where: { phone: preferencePhone },
+          create: {
+            phone: preferencePhone,
+            status: requestedConsent,
+            source: 'staff-app',
+            consentedAt: optedIn ? now : null,
+            optedOutAt: optedOut ? now : null
+          },
+          update: {
+            status: requestedConsent,
+            source: 'staff-app',
+            consentedAt: optedIn ? now : undefined,
+            optedOutAt: optedOut ? now : null
+          }
+        });
+        await prisma.person.updateMany({ where: { phone: preferencePhone }, data: { isOptedOut: optedOut } });
+      }
     }
 
     // Update person

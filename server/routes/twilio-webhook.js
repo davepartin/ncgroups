@@ -9,6 +9,7 @@ import 'dotenv/config';
 import { Router } from 'express';
 import twilio from 'twilio';
 import prisma from '../db.js';
+import { setPhoneConsent } from '../services/sms-consent.js';
 
 const router = Router();
 
@@ -37,32 +38,6 @@ function validateTwilioWebhook(req, res, next) {
     return res.status(403).send('Invalid Twilio signature');
   }
   next();
-}
-
-async function setPhoneConsent(phone, status, source) {
-  const now = new Date();
-  await prisma.$transaction([
-    prisma.smsPreference.upsert({
-      where: { phone },
-      create: {
-        phone,
-        status,
-        source,
-        consentedAt: status === 'OptedIn' ? now : null,
-        optedOutAt: status === 'OptedOut' ? now : null
-      },
-      update: {
-        status,
-        source,
-        consentedAt: status === 'OptedIn' ? now : undefined,
-        optedOutAt: status === 'OptedOut' ? now : null
-      }
-    }),
-    prisma.person.updateMany({
-      where: { phone },
-      data: { isOptedOut: status === 'OptedOut' }
-    })
-  ]);
 }
 
 /**
@@ -115,7 +90,7 @@ router.post('/webhook', validateTwilioWebhook, async (req, res) => {
         where: { phone }
       });
 
-      await setPhoneConsent(phone, 'OptedOut', 'twilio-stop');
+      await setPhoneConsent(prisma, phone, 'OptedOut', 'twilio-stop');
       if (people.length) {
         const names = people.map(person => `${person.firstName} ${person.lastName}`.trim()).join(', ');
         console.log(`Opted out: ${names} (${phone})`);
@@ -133,7 +108,7 @@ router.post('/webhook', validateTwilioWebhook, async (req, res) => {
         where: { phone }
       });
 
-      await setPhoneConsent(phone, 'OptedIn', 'twilio-start');
+      await setPhoneConsent(prisma, phone, 'OptedIn', 'twilio-start');
       if (people.length) {
         const names = people.map(person => `${person.firstName} ${person.lastName}`.trim()).join(', ');
         console.log(`Opted back in: ${names} (${phone})`);
@@ -177,7 +152,7 @@ router.post('/status-callback', validateTwilioWebhook, async (req, res) => {
       // --- 21610: Recipient previously opted out ---
       if (ErrorCode === '21610') {
         console.log(`Status callback: opted-out error (21610) for ${phone}`);
-        await setPhoneConsent(phone, 'OptedOut', 'twilio-error-21610');
+        await setPhoneConsent(prisma, phone, 'OptedOut', 'twilio-error-21610');
         if (people.length) {
           console.log(`Auto opted-out: ${name} (${phone})`);
           await notifyAdmin(`Opt-out: ${name} (${phone}) was flagged by Twilio and removed from your list.`);

@@ -1,5 +1,47 @@
 const CONSENT_STATUSES = ['Unknown', 'Legacy', 'OptedIn', 'OptedOut'];
 
+/**
+ * Twilio reports a send to an unsubscribed recipient either synchronously from
+ * messages.create or later on the status callback, so both paths have to record
+ * the opt-out.
+ */
+export const OPTED_OUT_ERROR_CODES = Object.freeze(['21610', '30630']);
+
+export function isOptedOutError(error) {
+  return OPTED_OUT_ERROR_CODES.includes(String(error?.code ?? ''));
+}
+
+/**
+ * Consent is stored per phone number, so every person sharing the number moves
+ * together and the preference is kept even when nobody in the directory owns
+ * that number.
+ */
+export function setPhoneConsent(prismaClient, phone, status, source) {
+  const now = new Date();
+  return prismaClient.$transaction([
+    prismaClient.smsPreference.upsert({
+      where: { phone },
+      create: {
+        phone,
+        status,
+        source,
+        consentedAt: status === 'OptedIn' ? now : null,
+        optedOutAt: status === 'OptedOut' ? now : null
+      },
+      update: {
+        status,
+        source,
+        consentedAt: status === 'OptedIn' ? now : undefined,
+        optedOutAt: status === 'OptedOut' ? now : null
+      }
+    }),
+    prismaClient.person.updateMany({
+      where: { phone },
+      data: { isOptedOut: status === 'OptedOut' }
+    })
+  ]);
+}
+
 function isoTimestamp(value) {
   if (!value) return null;
   const date = value instanceof Date ? value : new Date(value);
