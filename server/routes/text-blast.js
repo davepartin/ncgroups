@@ -10,6 +10,7 @@ import 'dotenv/config';
 import { Router } from 'express';
 import twilio from 'twilio';
 import prisma from '../db.js';
+import { isOptedOutError, setPhoneConsent } from '../services/sms-consent.js';
 import { adultTextingEligibilityWhere } from '../services/texting-eligibility.js';
 
 const router = Router();
@@ -50,14 +51,20 @@ async function classifyRawPhones(phones) {
       .map(phone => phone.length === 11 && phone.startsWith('1') ? phone.slice(1) : phone)
       .filter(phone => phone.length === 10)
   )];
-  const preferences = cleaned.length
-    ? await prisma.smsPreference.findMany({ where: { phone: { in: cleaned } } })
-    : [];
-  const blockedSet = new Set(
-    preferences
+  // An opted-out person is also checked directly: records imported before the
+  // consent table existed can carry the opt-out without a preference row.
+  const [preferences, optedOutPeople] = cleaned.length
+    ? await Promise.all([
+      prisma.smsPreference.findMany({ where: { phone: { in: cleaned } } }),
+      prisma.person.findMany({ where: { phone: { in: cleaned }, isOptedOut: true }, select: { phone: true } })
+    ])
+    : [[], []];
+  const blockedSet = new Set([
+    ...preferences
       .filter(preference => !SENDABLE_CONSENT.has(preference.status))
-      .map(preference => preference.phone)
-  );
+      .map(preference => preference.phone),
+    ...optedOutPeople.map(person => person.phone)
+  ]);
   return {
     cleaned,
     sendable: cleaned.filter(phone => !blockedSet.has(phone)),
@@ -156,6 +163,21 @@ async function sendSingleSMS(to, message) {
 }
 
 /**
+ * Twilio can also reject the send outright when the number has opted out. That
+ * rejection never reaches the status callback, so it is recorded here or the
+ * number stays textable and is retried on every later blast.
+ */
+async function recordOptOutFromSendError(phone, error) {
+  if (!isOptedOutError(error)) return;
+  try {
+    await setPhoneConsent(prisma, phone, 'OptedOut', `twilio-error-${error.code}`);
+    console.log(`Auto opted-out from send error ${error.code}: ${phone}`);
+  } catch (consentError) {
+    console.error(`Failed to record opt-out for ${phone}:`, consentError.message);
+  }
+}
+
+/**
  * POST /api/text-blast/preview
  * Body: { groupId?, gender?, ageGroup? }
  *
@@ -237,6 +259,7 @@ router.post('/send', async (req, res) => {
         });
       } catch (error) {
         console.error(`Failed to send to ${recipient.phone}:`, error.message);
+        await recordOptOutFromSendError(recipient.phone, error);
         results.failed.push({
           name: `${recipient.firstName} ${recipient.lastName}`,
           phone: recipient.phone,
@@ -370,6 +393,7 @@ router.post('/send-to-numbers', async (req, res) => {
         results.sent.push(phone);
       } catch (error) {
         console.error(`Failed to send to ${phone}:`, error.message);
+        await recordOptOutFromSendError(phone, error);
         results.failed.push({ phone, error: error.message });
       }
     }
