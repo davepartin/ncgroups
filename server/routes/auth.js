@@ -7,12 +7,17 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
+import { loginLockout, LOGIN_LOCKOUT_MESSAGE } from '../services/login-lockout.js';
 
 const router = Router();
 
 // For simplicity, we're using a single staff account
 // Password is stored as env variable, hashed on first comparison
 const STAFF_USERNAME = 'ncstaff';
+
+function rejectLocked(res) {
+  return res.status(429).json({ error: LOGIN_LOCKOUT_MESSAGE });
+}
 
 /**
  * POST /api/auth/login
@@ -26,22 +31,29 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    // Check username
-    if (username !== STAFF_USERNAME) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    const lockoutKey = loginLockout.keyFor(req);
+    if (loginLockout.isLocked(lockoutKey)) {
+      return rejectLocked(res);
     }
 
-    // Check password against env variable
     const staffPassword = process.env.STAFF_PASSWORD;
     if (!staffPassword) {
       console.error('STAFF_PASSWORD environment variable not set!');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    // Simple comparison (in production, you'd want to hash the stored password)
-    if (password !== staffPassword) {
+    // Check username and password together so a wrong name and a wrong
+    // password look the same, including when this attempt trips the lockout.
+    const credentialsValid = username === STAFF_USERNAME && password === staffPassword;
+    if (!credentialsValid) {
+      const result = loginLockout.recordFailure(lockoutKey);
+      if (result.locked) {
+        return rejectLocked(res);
+      }
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    loginLockout.recordSuccess(lockoutKey);
 
     // Generate JWT
     const token = generateToken({ 
