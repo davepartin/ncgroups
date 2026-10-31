@@ -92,7 +92,7 @@ A staff-only app for managing church contacts and enabling quick group communica
 
 ## NC Vault Sync
 
-The staff-safe NC Obsidian vault is the source of truth for people, groups, contact information, and group membership. NCGroups stores a published copy for fast use on staff phones. Text consent stays in NCGroups because it changes through Twilio START and STOP replies.
+The staff-safe NC Obsidian vault is the source of truth for people, groups, contact information, and group membership. NCGroups stores a published copy for fast use on staff phones. Text consent stays in NCGroups because it changes through Twilio START and STOP replies. New phone numbers start opted in (a number given to the church is treated as consent to receive church texts). Existing consent records are not changed by vault sync or person create, so STOP and other opt-outs stay opted out.
 
 The publisher always previews changes first and reports creates, updates, archives, shared phones, and matching conflicts. It only applies the same reviewed payload and never sends a text.
 

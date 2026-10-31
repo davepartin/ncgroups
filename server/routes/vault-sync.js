@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { buildConsentSnapshot } from '../services/sms-consent.js';
+import { buildConsentSnapshot, ensureNewPhoneConsent } from '../services/sms-consent.js';
 import { buildSyncPlan, payloadHash, validatePayload } from '../services/vault-sync.js';
 
 const router = Router();
@@ -137,11 +137,7 @@ router.post('/apply', authenticateSyncToken, async (req, res) => {
         const existingId = plan.personMatches.get(incoming.sourceId);
         let isOptedOut = false;
         if (incoming.phone) {
-          const preference = await tx.smsPreference.upsert({
-            where: { phone: incoming.phone },
-            create: { phone: incoming.phone, status: 'Unknown', source: 'vault-sync' },
-            update: {}
-          });
+          const preference = await ensureNewPhoneConsent(tx, incoming.phone, 'vault-sync');
           isOptedOut = preference.status === 'OptedOut';
         }
         const data = {
