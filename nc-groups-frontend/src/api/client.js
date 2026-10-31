@@ -51,12 +51,25 @@ const apiRequest = async (endpoint, options = {}) => {
   return data
 }
 
-// Auth
+// Auth — own fetch so a failed or locked-out sign-in stays on the form
+// instead of being treated as an expired session.
 export const login = async (username, password) => {
-  const data = await apiRequest('/api/auth/login', {
+  const response = await fetch(`${API_BASE}/api/auth/login`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   })
+
+  let data = {}
+  try {
+    data = await response.json()
+  } catch {
+    data = {}
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Login failed. Please try again.')
+  }
 
   if (data.token) {
     setToken(data.token)
