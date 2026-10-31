@@ -52,7 +52,7 @@ model Group {
 
 model SmsPreference {
   phone       String           @id
-  status      SmsConsentStatus @default(Unknown)
+  status      SmsConsentStatus @default(OptedIn)
   source      String?
   consentedAt DateTime?        @map("consented_at")
   optedOutAt  DateTime?        @map("opted_out_at")

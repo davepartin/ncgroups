@@ -11,6 +11,7 @@
 
 import { Router } from 'express';
 import prisma from '../db.js';
+import { ensureNewPhoneConsent, resolveIncomingPhoneConsent } from '../services/sms-consent.js';
 
 const router = Router();
 
@@ -226,11 +227,14 @@ router.post('/', async (req, res) => {
     });
 
     if (validPhone) {
-      await prisma.smsPreference.upsert({
-        where: { phone: validPhone },
-        create: { phone: validPhone, status: 'Unknown', source: 'staff-app' },
-        update: {}
-      });
+      const preference = await ensureNewPhoneConsent(prisma, validPhone, 'staff-app');
+      if (preference.status === 'OptedOut' && !person.isOptedOut) {
+        await prisma.person.update({
+          where: { id: person.id },
+          data: { isOptedOut: true }
+        });
+        person.isOptedOut = true;
+      }
     }
 
     const [withPreference] = await attachSmsPreferences([{
@@ -286,27 +290,46 @@ router.put('/:id', async (req, res) => {
     }
 
     const preferencePhone = updateData.phone !== undefined ? updateData.phone : existing.phone;
-    if (requestedConsent && preferencePhone) {
-      const now = new Date();
-      const optedOut = requestedConsent === 'OptedOut';
-      const optedIn = requestedConsent === 'OptedIn' || requestedConsent === 'Legacy';
-      await prisma.smsPreference.upsert({
-        where: { phone: preferencePhone },
-        create: {
-          phone: preferencePhone,
-          status: requestedConsent,
-          source: 'staff-app',
-          consentedAt: optedIn ? now : null,
-          optedOutAt: optedOut ? now : null
-        },
-        update: {
-          status: requestedConsent,
-          source: 'staff-app',
-          consentedAt: optedIn ? now : undefined,
-          optedOutAt: optedOut ? now : null
-        }
+    const phoneChanged = updateData.phone !== undefined && updateData.phone !== existing.phone;
+    if (preferencePhone && (phoneChanged || requestedConsent)) {
+      const existingPreference = await prisma.smsPreference.findUnique({ where: { phone: preferencePhone } });
+      const decision = resolveIncomingPhoneConsent({
+        existingPreference,
+        requestedConsent,
+        phoneChanged
       });
-      await prisma.person.updateMany({ where: { phone: preferencePhone }, data: { isOptedOut: optedOut } });
+      const now = new Date();
+      const optedOut = decision.status === 'OptedOut';
+      const optedIn = decision.status === 'OptedIn' || decision.status === 'Legacy';
+
+      if (decision.action === 'create') {
+        if (decision.status === 'OptedOut') {
+          await prisma.smsPreference.create({
+            data: {
+              phone: preferencePhone,
+              status: 'OptedOut',
+              source: 'staff-app',
+              consentedAt: null,
+              optedOutAt: now
+            }
+          });
+        } else {
+          await ensureNewPhoneConsent(prisma, preferencePhone, 'staff-app', now);
+        }
+      } else if (decision.action === 'update') {
+        await prisma.smsPreference.update({
+          where: { phone: preferencePhone },
+          data: {
+            status: decision.status,
+            source: 'staff-app',
+            consentedAt: optedIn ? now : undefined,
+            optedOutAt: optedOut ? now : null
+          }
+        });
+        await prisma.person.updateMany({ where: { phone: preferencePhone }, data: { isOptedOut: optedOut } });
+      }
+
+      updateData.isOptedOut = optedOut;
     }
 
     // Update person
